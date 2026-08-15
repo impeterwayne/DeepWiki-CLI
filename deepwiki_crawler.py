@@ -68,108 +68,715 @@ class CrawledPage:
     mermaid_count: int = 0
 
 
+# Mermaid keywords that cannot double as a node id.
+_MERMAID_RESERVED = {
+    "graph", "flowchart", "subgraph", "end", "class", "classdef", "click",
+    "style", "linkstyle", "direction", "call", "href", "default", "interpolate",
+}
+
+# The subset of the above that can legitimately open a statement.
+_MERMAID_STATEMENT_KEYWORDS = {
+    "graph", "flowchart", "subgraph", "end", "class", "classdef", "click",
+    "style", "linkstyle", "direction",
+}
+
+# Statement keywords whose argument is a free-form label, not a participant.
+_SEQUENCE_BLOCK_KEYWORDS = {
+    "loop", "alt", "else", "opt", "par", "and", "rect", "critical", "option",
+    "break", "box", "end", "autonumber", "title", "note", "activate",
+    "deactivate", "links", "link",
+}
+
+
 def clean_node_identifier(label: str) -> str:
     """Generates a clean alphanumeric identifier for a Mermaid node."""
-    cleaned = re.sub(r'[\'\"\[\]\{\}\(\)\<\>\:\/\*\.\-\s\$\@\,\=\+\;\#\!\\\|\?]+', '_', label).strip('_')
+    cleaned = re.sub(r"[^A-Za-z0-9_]+", "_", label).strip("_")
     if not cleaned or cleaned[0].isdigit():
         cleaned = f"node_{cleaned}"
-    return cleaned[:40]
+    cleaned = cleaned[:40].strip("_") or "node"
+    if cleaned.lower() in _MERMAID_RESERVED:
+        cleaned = f"{cleaned}_node"
+    return cleaned
+
+
+# --------------------------------------------------------------------------- #
+# Mermaid sanitizing helpers
+#
+# Every rewrite below runs on a *masked* line: each `"..."` literal is swapped
+# for a `\x00S<n>\x00` placeholder first. Without masking, a label such as
+# `CMD["wrapCommand() [src/cli/wrap.ts]"]` gets rewritten from the inside out
+# and produces nested brackets that Mermaid cannot parse.
+# --------------------------------------------------------------------------- #
+
+_MASK_RE = re.compile(r"\x00S(\d+)\x00")
+
+# Characters Mermaid tolerates inside an *unquoted* node label.
+_SAFE_UNQUOTED_LABEL = re.compile(r"^[A-Za-z0-9_\s\.\-/]*$")
+
+# Node shapes, longest opener first so `[[` wins over `[`.
+_SHAPE_OPENERS = ("[[", "[(", "([", "((", "{{", "[/", "[\\", "[", "(", "{", ">")
+_SHAPE_CLOSERS = {
+    "[[": ("]]",),
+    "[(": (")]",),
+    "([": ("])",),
+    "((": ("))",),
+    "{{": ("}}",),
+    "[/": ("/]", "\\]"),
+    "[\\": ("\\]", "/]"),
+    "[": ("]",),
+    "(": (")",),
+    "{": ("}",),
+    ">": ("]",),
+}
+
+# A bracket group is only a *new* node when nothing node-like precedes it
+# (a preceding `\x00` mask means it is the label of a quoted id, not a new node).
+_NOT_A_NODE_PREFIX = "(?<![A-Za-z0-9_\\-\\$\\]\\)\\}\\[\\(\\{>/\\\\\x00])"
+
+# classDiagram-only relations that DeepWiki sometimes emits inside a flowchart.
+_CLASS_RELATION_IN_FLOWCHART = re.compile(r"<\|\.\.|\.\.\|>|<\|--|--\|>|\*--|--\*")
+
+
+def _mask_quoted(line: str, store: List[str]) -> str:
+    """Replaces every "..." literal with an opaque placeholder."""
+    def _hide(match):
+        # AI output sometimes double-escapes quotes: "\"Label\"" -> 'Label'
+        label = match.group(1).replace('\\"', "'")
+        # A backtick opens Mermaid's markdown-string mode; only a label that is
+        # entirely wrapped in backticks is valid, the rest would break the lexer.
+        if label.count("`") and not (
+            label.count("`") == 2 and label.startswith("`") and label.endswith("`")
+        ):
+            label = label.replace("`", "'")
+        store.append(label)
+        return f"\x00S{len(store) - 1}\x00"
+
+    return re.sub(r'"((?:[^"\\\n]|\\.)*)"', _hide, line)
+
+
+def _unmask_quoted(text: str, store: List[str]) -> str:
+    return _MASK_RE.sub(lambda m: '"' + store[int(m.group(1))] + '"', text)
+
+
+def _new_mask(value: str, store: List[str]) -> str:
+    store.append(value)
+    return f"\x00S{len(store) - 1}\x00"
+
+
+def _masked_value(token: str, store: List[str]) -> Optional[str]:
+    match = _MASK_RE.fullmatch(token.strip())
+    return store[int(match.group(1))] if match else None
+
+
+def _quote_unsafe_labels(line: str, store: List[str]) -> str:
+    """
+    Wraps node labels in quotes when they contain characters Mermaid rejects
+    unquoted, e.g. `F[spawn(cmd, args, ...)]` -> `F["spawn(cmd, args, ...)"]`.
+    Shape delimiters are preserved, so `G[(...)]` stays a cylinder.
+    """
+    ident_re = re.compile(r"[A-Za-z0-9_]+")
+    out: List[str] = []
+    i, n = 0, len(line)
+
+    while i < n:
+        match = ident_re.match(line, i)
+        if not match:
+            out.append(line[i])
+            i += 1
+            continue
+
+        ident, body_start = match.group(0), match.end()
+        opener = next((o for o in _SHAPE_OPENERS if line.startswith(o, body_start)), None)
+        if opener is None:
+            out.append(ident)
+            i = body_start
+            continue
+
+        depth = sum(1 for ch in opener if ch in "[({") or 1
+        k = body_start + len(opener)
+        closer = content_end = None
+
+        while k < n:
+            ch = line[k]
+            if ch in "[({":
+                depth += 1
+            elif ch in "])}":
+                depth -= 1
+                if depth == 0:
+                    for candidate in _SHAPE_CLOSERS[opener]:
+                        if line.startswith(candidate, k - len(candidate) + 1):
+                            closer, content_end = candidate, k - len(candidate) + 1
+                            break
+                    if closer is None:
+                        closer, content_end = ch, k
+                    break
+            k += 1
+
+        if content_end is None:  # unbalanced - leave the line alone
+            out.append(ident)
+            i = body_start
+            continue
+
+        content = line[body_start + len(opener):content_end]
+        if not (_MASK_RE.fullmatch(content.strip()) or _SAFE_UNQUOTED_LABEL.match(content)):
+            label = _unmask_quoted(content, store).replace('"', "'").strip()
+            content = _new_mask(label, store)
+
+        out.append(ident + opener + content + closer)
+        i = content_end + len(closer)
+
+    return "".join(out)
+
+
+def _normalize_edge_labels(line: str, store: List[str]) -> str:
+    """
+    Edge labels are plain text, never nodes: `-->|["ID='*'"]|` -> `-->|"ID='*'"|`,
+    and `-->|loadBindings()|` has to be quoted or the parentheses break the parse.
+    """
+    def _fix(match):
+        inner = match.group(1).strip()
+        bracketed = re.fullmatch(r"\[\s*(.*?)\s*\]", inner, re.S)
+        if bracketed:
+            inner = bracketed.group(1).strip()
+        if _MASK_RE.fullmatch(inner):
+            return f"|{inner}|"
+        text = _unmask_quoted(inner, store).replace('"', "'").strip()
+        return f"|{_new_mask(text, store)}|" if text else "||"
+
+    return re.sub(r"\|([^|\n]*)\|", _fix, line)
+
+
+def _collapse_bracketed_ids(line: str, store: List[str]) -> str:
+    """
+    DeepWiki writes node ids inside brackets and then attaches the real shape:
+      `[EnvCheck{"Ready?"}]` -> `EnvCheck{"Ready?"}`
+      `[Agent]["AI Agent"]`  -> `Agent["AI Agent"]`
+      `[McpService] ["IMcpService"]` -> `McpService["IMcpService"]`
+    """
+    line = re.sub(
+        _NOT_A_NODE_PREFIX + r"\[\s*([A-Za-z0-9_]+\s*[\({\[]\x00S\d+\x00[\)\}\]])\s*\]",
+        lambda m: m.group(1),
+        line,
+    )
+    return re.sub(
+        _NOT_A_NODE_PREFIX + r"\[([^\[\]\x00\n]+)\]\s*(?=[\[\({])",
+        lambda m: clean_node_identifier(m.group(1)),
+        line,
+    )
+
+
+def _convert_anonymous_nodes(line: str, store: List[str]) -> str:
+    """`["Label"]` / `[Label]` with no node id -> `Label_id["Label"]`."""
+    def _from_quoted(match):
+        label = store[int(match.group(1))]
+        return f"{clean_node_identifier(label)}[\x00S{match.group(1)}\x00]"
+
+    line = re.sub(_NOT_A_NODE_PREFIX + r"\[\x00S(\d+)\x00\]", _from_quoted, line)
+
+    def _from_unquoted(match):
+        label = match.group(1).strip()
+        if not label or label == "*":  # `[*]` is a state-diagram terminal
+            return match.group(0)
+        return f"{clean_node_identifier(label)}[{_new_mask(label, store)}]"
+
+    line = re.sub(
+        _NOT_A_NODE_PREFIX + r"\[([^\[\]\x00\n]+)\](?!\s*[\(\[\{])",
+        _from_unquoted,
+        line,
+    )
+
+    # Anonymous rhombus/round nodes: `--> {a, b, c}` -> `--> a_b_c{"a, b, c"}`.
+    # Only after an edge or a label pipe, so labels like `A[foo (bar)]` are safe.
+    def _from_unquoted_shape(match):
+        prefix, opener, label, closer = match.groups()
+        if _SHAPE_CLOSERS[opener][0] != closer:
+            return match.group(0)
+        label = label.strip()
+        if not label:
+            return match.group(0)
+        return f"{prefix}{clean_node_identifier(label)}{opener}{_new_mask(label, store)}{closer}"
+
+    return re.sub(
+        r"(^\s*|[-=>.~|]\s*)([\{\(])([^\{\}\(\)\[\]\x00\n]+)([\}\)])",
+        _from_unquoted_shape,
+        line,
+    )
+
+
+def _convert_bare_quoted_nodes(line: str, store: List[str]) -> str:
+    """
+    Quoted strings standing in for node ids:
+      `"A" --> "B"`            -> `A["A"] --> B["B"]`
+      `"A"["A (impl)"]`        -> `A["A (impl)"]`
+      `"A(...)" as Router --> ` -> `Router["A(...)"] --> `
+    Edge labels (`-->|"text"|` and `-- "text" -->`) are left untouched.
+    """
+    # `"Label" as Id` -> `Id["Label"]`
+    line = re.sub(
+        r"(?<![\[\(\{>/\\|A-Za-z0-9_])\x00S(\d+)\x00\s+as\s+([A-Za-z0-9_]+)",
+        lambda m: f"{m.group(2)}[\x00S{m.group(1)}\x00]",
+        line,
+    )
+    # `"Id"["Label"]` -> `Id["Label"]`
+    line = re.sub(
+        r"(?<![\[\(\{>/\\|A-Za-z0-9_])\x00S(\d+)\x00\s*(?=[\[\({])",
+        lambda m: clean_node_identifier(store[int(m.group(1))]),
+        line,
+    )
+
+    protected = set()
+    for match in re.finditer(r"\|\s*\x00S(\d+)\x00\s*\|", line):
+        protected.add(int(match.group(1)))
+    for match in re.finditer(r"(?:-{2,}|={2,}|-\.)(?![>xo])\s*\x00S(\d+)\x00\s*[-=.]", line):
+        protected.add(int(match.group(1)))
+
+    def _to_node(match):
+        index = int(match.group(1))
+        if index in protected:
+            return match.group(0)
+        return f"{clean_node_identifier(store[index])}[{match.group(0)}]"
+
+    return re.sub(
+        r"(?<![\[\(\{>/\\|])\x00S(\d+)\x00(?![\]\)\}/\\|])",
+        _to_node,
+        line,
+    )
+
+
+def _split_first_target(rest: str) -> Tuple[str, str]:
+    """Splits `[capabilities.yaml] stroke-dasharray: 5 5` into target + remainder."""
+    depth = 0
+    for i, ch in enumerate(rest):
+        if ch in "[({":
+            depth += 1
+        elif ch in "])}":
+            depth -= 1
+        elif ch.isspace() and depth == 0 and i > 0:
+            return rest[:i], rest[i:]
+    return rest, ""
+
+
+def _node_ref_to_id(token: str, store: List[str]) -> str:
+    """Reduces any node reference to the bare id `style`/`class`/`click` require."""
+    token = token.strip()
+    label = _masked_value(token, store)
+    if label is not None:
+        return clean_node_identifier(label)
+
+    match = re.match(r"^([A-Za-z0-9_]+)[\[\(\{>]", token)
+    if match:
+        return match.group(1)
+
+    match = re.match(r"^\[\s*(.*?)\s*\]$", token, re.S)
+    if match:
+        inner = match.group(1)
+        return clean_node_identifier(_masked_value(inner, store) or inner)
+
+    return token
+
+
+def _sanitize_style_statement(rest: str, store: List[str]) -> str:
+    target, remainder = _split_first_target(rest)
+    ids = ",".join(_node_ref_to_id(part, store) for part in target.split(",") if part.strip())
+    return (ids or target) + remainder
+
+
+def _rename_reserved_ids(lines: List[str], reserved_ids: set) -> List[str]:
+    """Renames node ids that collide with Mermaid keywords (e.g. a node called `graph`)."""
+    renamed = []
+    for position, line in enumerate(lines):
+        indent = len(line) - len(line.lstrip())
+
+        def _rename(match):
+            # Leave statement keywords alone: `graph TD`, `subgraph Foo`, `end`.
+            at_line_start = match.start() == indent
+            followed_by_shape = match.end() < len(line) and line[match.end()] in "[({>"
+            is_statement = match.group(0).lower() in _MERMAID_STATEMENT_KEYWORDS
+            if position == 0 or (is_statement and at_line_start and not followed_by_shape):
+                return match.group(0)
+            return f"{match.group(0)}_node"
+
+        pattern = r"(?<![A-Za-z0-9_])(" + "|".join(re.escape(i) for i in reserved_ids) + r")(?![A-Za-z0-9_])"
+        renamed.append(re.sub(pattern, _rename, line))
+    return renamed
+
+
+def _sanitize_flowchart(lines: List[str]) -> str:
+    store: List[str] = []
+    out: List[str] = []
+    reserved_ids = set()
+    masked_lines = [_mask_quoted(l, store) for l in lines]
+
+    # A subgraph id that collides with a node id makes Dagre report a cycle,
+    # so the ids already spoken for have to be known up front.
+    taken_ids = set()
+    for masked in masked_lines:
+        if re.match(r"^\s*(?:subgraph|style|class|click|linkStyle|classDef)\b", masked):
+            continue
+        for m in re.finditer(r"(?<![A-Za-z0-9_])([A-Za-z0-9_]+)(?=[\[\(\{>])", masked):
+            taken_ids.add(m.group(1))
+
+    for line in masked_lines:
+        stripped = line.strip()
+
+        if not stripped or stripped.startswith("%%"):
+            out.append(line)
+            continue
+
+        # A subgraph always needs a bare id; the title becomes a quoted label:
+        #   `subgraph "Name"`                  -> `Name ["Name"]`
+        #   `subgraph "Id" ["Label"]`          -> `Id ["Label"]`
+        #   `subgraph Prerendering (Server)`   -> `Prerendering_Server ["Prerendering (Server)"]`
+        m_sub = re.match(r"^(\s*subgraph\s+)(\S.*?)\s*$", line)
+        if m_sub:
+            rest = m_sub.group(2)
+            m_split = re.match(r"^(.*?)\s*\[\s*(.*?)\s*\]$", rest, re.S)
+            id_part, label_part = m_split.groups() if m_split else (rest, None)
+
+            title = _masked_value(id_part, store)
+            if title is None:
+                title = _unmask_quoted(id_part, store).replace('"', "'")
+            if label_part is None:
+                label = title
+            else:
+                label = _masked_value(label_part, store)
+                if label is None:
+                    label = _unmask_quoted(label_part, store).replace('"', "'")
+
+            sub_id = clean_node_identifier(title)
+            while sub_id in taken_ids:
+                sub_id += "_group"
+            taken_ids.add(sub_id)
+
+            out.append(f"{m_sub.group(1)}{sub_id} [{_new_mask(label, store)}]")
+            continue
+
+        # `style`/`class`/`click`/`linkStyle` only accept bare node ids.
+        m_style = re.match(r"^(\s*)(style|class|click|linkStyle|classDef)\s+(.*)$", line)
+        if m_style:
+            out.append(
+                f"{m_style.group(1)}{m_style.group(2)} "
+                + _sanitize_style_statement(m_style.group(3), store)
+            )
+            continue
+
+        # classDiagram relations leaked into a flowchart: keep the link, drop the arrowhead.
+        line = _CLASS_RELATION_IN_FLOWCHART.sub("---", line)
+
+        line = _normalize_edge_labels(line, store)
+        line = _collapse_bracketed_ids(line, store)
+        line = _convert_bare_quoted_nodes(line, store)
+        line = _convert_anonymous_nodes(line, store)
+        line = _quote_unsafe_labels(line, store)
+
+        for match in re.finditer(r"(?<![A-Za-z0-9_])([A-Za-z0-9_]+)(?=[\[\({>])", line):
+            if match.group(1).lower() in _MERMAID_RESERVED:
+                reserved_ids.add(match.group(1))
+
+        out.append(line)
+
+    if reserved_ids:
+        out = _rename_reserved_ids(out, reserved_ids)
+
+    return "\n".join(_unmask_quoted(line, store) for line in out)
+
+
+def _sanitize_sequence_diagram(lines: List[str]) -> str:
+    """
+    Mermaid rejects a quoted string as a participant id, so
+    `"ASGI Server"->>"websocket_session()": msg` fails. Quoted names become ids
+    and are declared once via `participant Id as "Name"`.
+    """
+    store: List[str] = []
+    names: Dict[str, str] = {}
+    out: List[str] = []
+    declared = set()
+
+    def _to_id(match):
+        label = store[int(match.group(1))]
+        return names.setdefault(label, clean_node_identifier(label))
+
+    for raw_line in lines:
+        line = _mask_quoted(raw_line, store)
+
+        # participant ["Name"] / participant "Name" -> participant Id as "Name"
+        m_part = re.match(
+            r"^(\s*)(participant|actor)\s+\[?\s*(\x00S\d+\x00)\s*\]?"
+            r"(?:\s+as\s+([A-Za-z0-9_]+))?\s*$",
+            line,
+        )
+        if m_part:
+            label = _masked_value(m_part.group(3), store) or ""
+            ident = m_part.group(4) or names.setdefault(label, clean_node_identifier(label))
+            names.setdefault(label, ident)
+            declared.add(ident)
+            out.append(f"{m_part.group(1)}{m_part.group(2)} {ident} as {m_part.group(3)}")
+            continue
+
+        # Message text lives right of the first `:` and must survive untouched.
+        head, sep, tail = line.partition(":")
+
+        if head.strip().split(" ")[0].lower() not in _SEQUENCE_BLOCK_KEYWORDS:
+            head = re.sub(r'\[\x00S(\d+)\x00\]', _to_id, head)
+            head = _MASK_RE.sub(_to_id, head)
+            # `A>>B` is not a valid arrow; Mermaid needs `A->>B`.
+            head = re.sub(r"(?<![-<>])>>", "->>", head)
+
+        out.append(head + sep + tail)
+
+    missing = [
+        f'    participant {ident} as "{label}"'
+        for label, ident in names.items()
+        if ident not in declared
+    ]
+    if missing and out:
+        out = out[:1] + missing + out[1:]
+
+    return "\n".join(_unmask_quoted(line, store) for line in out)
+
+
+def _sanitize_state_diagram(lines: List[str]) -> str:
+    """
+    Mermaid state diagrams cannot use a quoted string as a state id, so
+    `[*] --> "Pending"` fails. Quoted names are turned into ids and declared
+    once via `state "Pending" as Pending`.
+    """
+    store: List[str] = []
+    names: Dict[str, str] = {}
+    out: List[str] = []
+
+    for raw_line in lines:
+        line = _mask_quoted(raw_line, store)
+
+        # `state "Name" as id` is already valid - leave it (and its id) alone.
+        if re.match(r"^\s*state\s+\x00S\d+\x00\s+as\s+", line):
+            out.append(_unmask_quoted(line, store))
+            continue
+
+        # Everything right of the first `:` is free-form label text.
+        head, sep, tail = line.partition(":")
+
+        def _to_id(match):
+            label = store[int(match.group(1))]
+            return names.setdefault(label, clean_node_identifier(label))
+
+        out.append(_MASK_RE.sub(_to_id, head) + sep + _unmask_quoted(tail, store))
+
+    if names and out:
+        indent = " " * 4
+        declarations = [f'{indent}state "{label}" as {ident}' for label, ident in names.items()]
+        out = out[:1] + declarations + out[1:]
+
+    return "\n".join(out)
+
+
+def _sanitize_class_diagram(lines: List[str]) -> str:
+    """
+    `class "FastAPI" as FastAPI_Entity {` and `["IChatService"] --> ["ChatModel"]`
+    are both invalid; class ids must be bare, with the display name as a label.
+    """
+    store: List[str] = []
+    names: Dict[str, str] = {}
+    declared = set()
+    out: List[str] = []
+
+    def _to_id(match):
+        label = store[int(match.group(1))]
+        return names.setdefault(label, clean_node_identifier(label))
+
+    for raw_line in lines:
+        line = _mask_quoted(raw_line, store)
+
+        # class "Name" [as Id] [{] -> class Id["Name"] [{]
+        m_class = re.match(
+            r"^(\s*class\s+)(\x00S(\d+)\x00)(?:\s+as\s+([A-Za-z0-9_]+))?\s*(\{?)\s*$", line
+        )
+        if m_class:
+            label = store[int(m_class.group(3))]
+            ident = m_class.group(4) or clean_node_identifier(label)
+            names[label] = ident
+            declared.add(ident)
+            brace = f" {m_class.group(5)}" if m_class.group(5) else ""
+            out.append(f"{m_class.group(1)}{ident}[{m_class.group(2)}]{brace}")
+            continue
+
+        if re.match(r"^\s*(?:note|click|link|callback|cssClass|style|%%)", line):
+            out.append(line)
+            continue
+
+        head, sep, tail = line.partition(":")
+        head = re.sub(r'\[\x00S(\d+)\x00\]', _to_id, head)
+        head = re.sub(_NOT_A_NODE_PREFIX + r"\[([A-Za-z0-9_][A-Za-z0-9_\s\.\-/]*)\]",
+                      lambda m: clean_node_identifier(m.group(1)), head)
+        # `"BaseModel" <|-- "OpenAPI"` - relations cannot use quoted class names.
+        head = _MASK_RE.sub(_to_id, head)
+        out.append(head + sep + tail)
+
+    # Keep the original display name for any class whose id had to be rewritten.
+    out += [
+        f'    class {ident}["{label}"]'
+        for label, ident in names.items()
+        if ident not in declared and ident != label
+    ]
+    return "\n".join(_unmask_quoted(line, store) for line in out)
 
 
 def sanitize_mermaid_block(block: str) -> str:
     """
     Cleans and repairs syntax issues produced by AI-generated Mermaid diagrams:
-      1. Anonymous bracket nodes: `["Label"]` -> `NodeID["Label"]`
-      2. Nested double/single quotes: `["'Label'"]` -> `NodeID["Label"]`
-      3. Unquoted bracket nodes: `[Label]` -> `NodeID["Label"]`
-      4. Invalid sequenceDiagram participants: `participant ["Name"]` -> `participant Name as "Name"`
-      5. Subgraphs with colons or unescaped characters
-      6. Nodes with nested square brackets inside labels: `A["Label [sub]"]` -> `A["Label (sub)"]`
+      1. Anonymous bracket nodes: `["Label"]` / `[Label]` -> `NodeID["Label"]`
+      2. Bare quoted nodes: `"A" --> "B"` -> `A["A"] --> B["B"]`
+      3. Unquoted labels holding parentheses/commas: `F[spawn(a, b)]` -> `F["spawn(a, b)"]`
+      4. Bracketed references inside quoted labels are left intact (no nesting)
+      5. Bracket-wrapped ids: `[Agent]["AI Agent"]` -> `Agent["AI Agent"]`
+      6. `style`/`class`/`click` targets reduced to bare node ids
+      7. Node ids colliding with Mermaid keywords (`graph`, `end`, ...) renamed
+      8. Quoted subgraph titles, state names, class names and sequence
+         participants given real ids with the original text kept as the label
     """
     lines = block.strip().split("\n")
     if not lines:
         return block
 
-    first_line = lines[0].strip()
-    is_sequence = first_line.startswith("sequenceDiagram")
-    is_graph = first_line.startswith("graph") or first_line.startswith("flowchart")
+    header = next((l.strip() for l in lines if l.strip() and not l.strip().startswith("%%")), "")
 
-    cleaned_lines = []
+    if header.startswith("sequenceDiagram"):
+        return _sanitize_sequence_diagram(lines)
+    if header.startswith("stateDiagram"):
+        return _sanitize_state_diagram(lines)
+    if header.startswith("classDiagram"):
+        return _sanitize_class_diagram(lines)
+    if header.startswith("graph") or header.startswith("flowchart"):
+        return _sanitize_flowchart(lines)
 
-    # Sequence diagrams
-    if is_sequence:
-        for line in lines:
-            l = line
-            # participant ["Name"] -> participant Name as "Name"
-            m_part = re.search(r'participant\s+\[\"([^\"]+)\"\]', l)
-            if m_part:
-                raw_name = m_part.group(1)
-                p_id = clean_node_identifier(raw_name)
-                l = re.sub(r'participant\s+\[\"[^\"]+\"\]', f'participant {p_id} as "{raw_name}"', l)
-            
-            # ["Name"] in arrows -> Name
-            l = re.sub(r'\[\"([^\"]+)\"\]', lambda m: clean_node_identifier(m.group(1)), l)
-            cleaned_lines.append(l)
-        return "\n".join(cleaned_lines)
-
-    if not is_graph:
-        return block
-
-    for line in lines:
-        l = line
-
-        # 1. Subgraph cleaning: `subgraph "Name"` or `subgraph "ID" ["Label"]`
-        m_sub = re.match(r'^(\s*subgraph\s+)\"([^\"]+)\"(\s*\[\"?([^\"]*)\"?\])?\s*$', l)
-        if m_sub:
-            indent = m_sub.group(1)
-            raw_title = m_sub.group(2)
-            explicit_label = m_sub.group(4) or raw_title
-            sub_id = clean_node_identifier(raw_title)
-            l = f'{indent}{sub_id} ["{explicit_label}"]'
-            cleaned_lines.append(l)
-            continue
-
-        # 2. Anonymous bracket nodes with quotes: `["Label"]` or `["'Label'"]`
-        def replace_quoted_anonymous(match):
-            inner = match.group(1).strip()
-            if (inner.startswith("'") and inner.endswith("'")) or (inner.startswith('"') and inner.endswith('"')):
-                inner = inner[1:-1].strip()
-            clean_label = inner.replace("[", "(").replace("]", ")").replace('"', "'")
-            node_id = clean_node_identifier(clean_label)
-            return f'{node_id}["{clean_label}"]'
-
-        l = re.sub(r'(?<![a-zA-Z0-9_\-\$])\[\"([^\"]+)\"\]', replace_quoted_anonymous, l)
-
-        # 3. Anonymous unquoted bracket nodes: `[Label]` or `[EnvCheck{"Label"}]`
-        def replace_unquoted_anonymous(match):
-            inner = match.group(1).strip()
-            if '{"' in inner or "{\'" in inner:
-                m_shape = re.match(r'^([a-zA-Z0-9_]+)\{\"?([^\"]+)\"?\}$', inner)
-                if m_shape:
-                    s_id = m_shape.group(1)
-                    s_lbl = m_shape.group(2).replace('"', "'")
-                    return f'{s_id}{{"{s_lbl}"}}'
-            if re.match(r'^[a-zA-Z0-9_\s\.\-\/\:]+$', inner):
-                clean_label = inner.replace('"', "'")
-                node_id = clean_node_identifier(clean_label)
-                return f'{node_id}["{clean_label}"]'
-            return match.group(0)
-
-        l = re.sub(r'(?<![a-zA-Z0-9_\-\$])\[([a-zA-Z0-9_\s\.\-\/\:\{\}\"\']+)\](?!\s*[\(\[\{\<\>])', replace_unquoted_anonymous, l)
-
-        cleaned_lines.append(l)
-
-    return "\n".join(cleaned_lines)
+    return block
 
 
 def sanitize_all_mermaids_in_markdown(md_text: str) -> str:
     """Finds all Mermaid code blocks in Markdown and cleans their syntax."""
     def _repl(match):
         raw_code = match.group(1)
-        fixed_code = sanitize_mermaid_block(raw_code)
+        try:
+            fixed_code = sanitize_mermaid_block(raw_code)
+        except Exception:
+            fixed_code = raw_code  # never lose a diagram to a sanitizer bug
         return f"```mermaid\n{fixed_code.strip()}\n```"
 
     return re.sub(r'```mermaid([\s\S]*?)```', _repl, md_text)
+
+
+def is_repo_path(path: str) -> bool:
+    """Checks if a string looks like a valid repository relative file path."""
+    path = path.strip()
+    if not path or path.startswith(('http://', 'https://', '#', 'mailto:', 'ftp:', 'chapters/', './chapters/')):
+        return False
+    if path.endswith('00_INDEX.md'):
+        return False
+    # Avoid strings with characters invalid in clean repository paths
+    if any(c in path for c in ['<', '>', '"', "'", '`', ' ', '\t', '\n']):
+        return False
+    base = os.path.basename(path.replace('\\', '/'))
+    if '.' in base or '/' in path or '\\' in path or path.startswith('.'):
+        return True
+    return False
+
+
+def make_github_file_url(owner: str, repo: str, file_path: str, lines: Optional[str] = None, branch: str = "HEAD") -> str:
+    """Constructs a GitHub blob URL pointing directly to a repository file and optional line range."""
+    file_path = file_path.strip().lstrip('/').replace('\\', '/')
+    base = f"https://github.com/{owner}/{repo}/blob/{branch}/{file_path}"
+    if not lines:
+        return base
+    m = re.search(r'(\d+)(?:-(\d+))?', lines)
+    if m:
+        start = m.group(1)
+        end = m.group(2)
+        if end and end != start:
+            return f"{base}#L{start}-L{end}"
+        else:
+            return f"{base}#L{start}"
+    return base
+
+
+def convert_markdown_links_to_github(text: str, owner: str, repo: str, branch: str = "HEAD") -> str:
+    """
+    Transforms source file references, relative file paths, and in-text line citations
+    in Markdown into clickable, direct GitHub URLs.
+    
+    Preserves:
+      - Mermaid diagrams
+      - Local inter-chapter links (e.g. chapters/01_....md)
+      - In-page anchors (e.g. #1.1)
+      - External web URLs
+    """
+    # 1. Protect Mermaid diagram blocks from link modifications
+    mermaid_blocks = []
+    def _save_mermaid(m):
+        mermaid_blocks.append(m.group(0))
+        return f"<!--MERMAID_BLOCK_{len(mermaid_blocks) - 1}-->"
+
+    text = re.sub(r'```mermaid[\s\S]*?```', _save_mermaid, text)
+
+    # 2. Backtick file followed by line range citation: `path/to/file` [58-80]()
+    def _repl_backtick_line(m):
+        fpath = m.group(2).strip()
+        space = m.group(3)
+        lines = m.group(4).strip()
+        if is_repo_path(fpath):
+            url = make_github_file_url(owner, repo, fpath, lines, branch)
+            return f'`{fpath}`{space}[{lines}]({url})'
+        return m.group(0)
+
+    text = re.sub(r'(`([^`\n]+)`)(\s*)\[(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)\]\(\)', _repl_backtick_line, text)
+
+    # 3. Convert markdown links: [label](url)
+    def _repl_link(m):
+        label = m.group(1)
+        url = m.group(2).strip()
+
+        # If URL is already absolute web link or anchor or chapter link, preserve it
+        if url.startswith(('http://', 'https://', '#', 'mailto:', 'ftp:', 'chapters/', './chapters/')) or url.endswith('00_INDEX.md'):
+            return m.group(0)
+
+        # Empty URL: [src/vs/code/app.ts:58-80]() or [package.json]()
+        if not url:
+            clean_label = label.strip()
+            # Match path:start-end or path:start or path:start-end, start-end
+            colon_match = re.match(r'^([a-zA-Z0-9_.\-\/\\]+):(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)$', clean_label)
+            if colon_match:
+                fpath = colon_match.group(1)
+                lines = colon_match.group(2)
+                if is_repo_path(fpath):
+                    gh_url = make_github_file_url(owner, repo, fpath, lines, branch)
+                    return f'[{label}]({gh_url})'
+            elif is_repo_path(clean_label):
+                gh_url = make_github_file_url(owner, repo, clean_label, branch=branch)
+                return f'[{label}]({gh_url})'
+            return m.group(0)
+
+        # Non-empty relative URL: [label](extensions/auth/auth.css) or [label](path#L10-L20) or [label](path:10-20)
+        lines = None
+        fpath = url
+        if '#' in fpath:
+            fpath, fragment = fpath.split('#', 1)
+            lines = fragment
+        elif ':' in fpath and not fpath.startswith('http'):
+            fpath, lines = fpath.rsplit(':', 1)
+
+        if is_repo_path(fpath):
+            gh_url = make_github_file_url(owner, repo, fpath, lines, branch)
+            return f'[{label}]({gh_url})'
+
+        return m.group(0)
+
+    text = re.sub(r'\[([^\]\n]+)\]\(([^)\n]*)\)', _repl_link, text)
+
+    # 4. Restore Mermaid blocks
+    for idx, block in enumerate(mermaid_blocks):
+        text = text.replace(f"<!--MERMAID_BLOCK_{idx}-->", block)
+
+    return text
+
 
 
 class DeepWikiUrlParser:
@@ -237,6 +844,7 @@ class DeepWikiCrawler:
         delay_between_requests: float = 0.0,
         headless: bool = True,
         verbose: bool = False,
+        branch: str = "HEAD",
     ):
         from crawl4ai import BrowserConfig, CrawlerRunConfig, CacheMode
         
@@ -246,6 +854,7 @@ class DeepWikiCrawler:
         self.delay_between_requests = delay_between_requests
         self.headless = headless
         self.verbose = verbose
+        self.branch = branch
 
         self.browser_config = BrowserConfig(
             headless=self.headless,
@@ -323,6 +932,8 @@ class DeepWikiCrawler:
 
             # Sanitize and validate all Mermaid diagrams
             sanitized_md = sanitize_all_mermaids_in_markdown(raw_md)
+            # Convert source file references and line citations to direct GitHub URLs
+            sanitized_md = convert_markdown_links_to_github(sanitized_md, self.owner, self.repo, self.branch)
             mermaids = re.findall(r"```mermaid[\s\S]*?```", sanitized_md)
             
             clean_title_slug = re.sub(r"[^a-zA-Z0-9]+", "-", title).strip("-").lower()
@@ -549,6 +1160,8 @@ class DeepWikiCrawler:
 
                     # Sanitize Mermaid syntax
                     sanitized_md = sanitize_all_mermaids_in_markdown(md_content)
+                    # Convert source file references and line citations to direct GitHub URLs
+                    sanitized_md = convert_markdown_links_to_github(sanitized_md, self.owner, self.repo, self.branch)
                     mermaids = re.findall(r"```mermaid[\s\S]*?```", sanitized_md)
                     char_count = len(sanitized_md)
                     word_count = len(sanitized_md.split()) if sanitized_md else 0
@@ -767,6 +1380,7 @@ async def main_async(args):
             delay_between_requests=args.delay,
             headless=not args.headful,
             verbose=args.verbose,
+            branch=args.branch,
         )
     except Exception as e:
         console.print(f"[red]Error parsing URL:[/red] {e}")
@@ -776,6 +1390,7 @@ async def main_async(args):
         Panel.fit(
             f"[bold]Target Repository:[/bold] [green]{crawler.owner}/{crawler.repo}[/green]\n"
             f"[bold]DeepWiki URL:[/bold] [link={crawler.base_url}]{crawler.base_url}[/link]\n"
+            f"[bold]GitHub Branch:[/bold] [yellow]{args.branch}[/yellow]\n"
             f"[bold]Output Directory:[/bold] {args.output}\n"
             f"[bold]Concurrency:[/bold] {args.concurrency} workers | [bold]Format:[/bold] {args.format}",
             title="Configuration",
@@ -858,6 +1473,12 @@ Examples:
         "--output",
         default="./docs",
         help="Directory where crawled documentation will be saved (default: ./docs)",
+    )
+    parser.add_argument(
+        "-b",
+        "--branch",
+        default="HEAD",
+        help="GitHub branch, tag, or commit ref for source file links (default: HEAD)",
     )
     parser.add_argument(
         "-f",

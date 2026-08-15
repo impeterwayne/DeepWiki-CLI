@@ -13,57 +13,57 @@ mermaid_diagrams: 2
 
 The following files were used as context for generating this wiki page:
 
-- [extensions/git/package.json](extensions/git/package.json)
-- [extensions/git/package.nls.json](extensions/git/package.nls.json)
-- [extensions/git/src/actionButton.ts](extensions/git/src/actionButton.ts)
-- [extensions/git/src/api/api1.ts](extensions/git/src/api/api1.ts)
-- [extensions/git/src/api/git.d.ts](extensions/git/src/api/git.d.ts)
-- [extensions/git/src/artifactProvider.ts](extensions/git/src/artifactProvider.ts)
-- [extensions/git/src/askpass-main.ts](extensions/git/src/askpass-main.ts)
-- [extensions/git/src/askpass.ts](extensions/git/src/askpass.ts)
-- [extensions/git/src/autofetch.ts](extensions/git/src/autofetch.ts)
-- [extensions/git/src/blame.ts](extensions/git/src/blame.ts)
-- [extensions/git/src/cache.ts](extensions/git/src/cache.ts)
-- [extensions/git/src/commands.ts](extensions/git/src/commands.ts)
-- [extensions/git/src/decorationProvider.ts](extensions/git/src/decorationProvider.ts)
-- [extensions/git/src/git-editor-main.ts](extensions/git/src/git-editor-main.ts)
-- [extensions/git/src/git.ts](extensions/git/src/git.ts)
-- [extensions/git/src/gitEditor.ts](extensions/git/src/gitEditor.ts)
-- [extensions/git/src/historyItemDetailsProvider.ts](extensions/git/src/historyItemDetailsProvider.ts)
-- [extensions/git/src/historyProvider.ts](extensions/git/src/historyProvider.ts)
-- [extensions/git/src/ipc/ipcServer.ts](extensions/git/src/ipc/ipcServer.ts)
-- [extensions/git/src/main.ts](extensions/git/src/main.ts)
-- [extensions/git/src/model.ts](extensions/git/src/model.ts)
-- [extensions/git/src/operation.ts](extensions/git/src/operation.ts)
-- [extensions/git/src/postCommitCommands.ts](extensions/git/src/postCommitCommands.ts)
-- [extensions/git/src/repository.ts](extensions/git/src/repository.ts)
-- [extensions/git/src/statusbar.ts](extensions/git/src/statusbar.ts)
-- [extensions/git/src/terminal.ts](extensions/git/src/terminal.ts)
-- [extensions/git/src/timelineProvider.ts](extensions/git/src/timelineProvider.ts)
-- [extensions/git/src/util.ts](extensions/git/src/util.ts)
-- [extensions/git/tsconfig.json](extensions/git/tsconfig.json)
-- [extensions/github/src/typings/git.d.ts](extensions/github/src/typings/git.d.ts)
-- [src/vs/workbench/api/browser/mainThreadSCM.ts](src/vs/workbench/api/browser/mainThreadSCM.ts)
-- [src/vs/workbench/api/common/extHostSCM.ts](src/vs/workbench/api/common/extHostSCM.ts)
-- [src/vs/workbench/contrib/scm/browser/activity.ts](src/vs/workbench/contrib/scm/browser/activity.ts)
-- [src/vs/workbench/contrib/scm/browser/media/scm.css](src/vs/workbench/contrib/scm/browser/media/scm.css)
-- [src/vs/workbench/contrib/scm/browser/menus.ts](src/vs/workbench/contrib/scm/browser/menus.ts)
-- [src/vs/workbench/contrib/scm/browser/scm.contribution.ts](src/vs/workbench/contrib/scm/browser/scm.contribution.ts)
-- [src/vs/workbench/contrib/scm/browser/scmHistory.ts](src/vs/workbench/contrib/scm/browser/scmHistory.ts)
-- [src/vs/workbench/contrib/scm/browser/scmHistoryViewPane.ts](src/vs/workbench/contrib/scm/browser/scmHistoryViewPane.ts)
-- [src/vs/workbench/contrib/scm/browser/scmRepositoriesViewPane.ts](src/vs/workbench/contrib/scm/browser/scmRepositoriesViewPane.ts)
-- [src/vs/workbench/contrib/scm/browser/scmRepositoryRenderer.ts](src/vs/workbench/contrib/scm/browser/scmRepositoryRenderer.ts)
-- [src/vs/workbench/contrib/scm/browser/scmViewPane.ts](src/vs/workbench/contrib/scm/browser/scmViewPane.ts)
-- [src/vs/workbench/contrib/scm/browser/scmViewService.ts](src/vs/workbench/contrib/scm/browser/scmViewService.ts)
-- [src/vs/workbench/contrib/scm/browser/util.ts](src/vs/workbench/contrib/scm/browser/util.ts)
-- [src/vs/workbench/contrib/scm/browser/workingSet.ts](src/vs/workbench/contrib/scm/browser/workingSet.ts)
-- [src/vs/workbench/contrib/scm/common/artifact.ts](src/vs/workbench/contrib/scm/common/artifact.ts)
-- [src/vs/workbench/contrib/scm/common/history.ts](src/vs/workbench/contrib/scm/common/history.ts)
-- [src/vs/workbench/contrib/scm/common/scm.ts](src/vs/workbench/contrib/scm/common/scm.ts)
-- [src/vs/workbench/contrib/scm/test/browser/scmHistory.test.ts](src/vs/workbench/contrib/scm/test/browser/scmHistory.test.ts)
-- [src/vscode-dts/vscode.proposed.scmArtifactProvider.d.ts](src/vscode-dts/vscode.proposed.scmArtifactProvider.d.ts)
-- [src/vscode-dts/vscode.proposed.scmHistoryProvider.d.ts](src/vscode-dts/vscode.proposed.scmHistoryProvider.d.ts)
-- [test/automation/src/statusbar.ts](test/automation/src/statusbar.ts)
+- [extensions/git/package.json](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/package.json)
+- [extensions/git/package.nls.json](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/package.nls.json)
+- [extensions/git/src/actionButton.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/actionButton.ts)
+- [extensions/git/src/api/api1.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/api/api1.ts)
+- [extensions/git/src/api/git.d.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/api/git.d.ts)
+- [extensions/git/src/artifactProvider.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/artifactProvider.ts)
+- [extensions/git/src/askpass-main.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/askpass-main.ts)
+- [extensions/git/src/askpass.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/askpass.ts)
+- [extensions/git/src/autofetch.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/autofetch.ts)
+- [extensions/git/src/blame.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/blame.ts)
+- [extensions/git/src/cache.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/cache.ts)
+- [extensions/git/src/commands.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/commands.ts)
+- [extensions/git/src/decorationProvider.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/decorationProvider.ts)
+- [extensions/git/src/git-editor-main.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/git-editor-main.ts)
+- [extensions/git/src/git.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/git.ts)
+- [extensions/git/src/gitEditor.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/gitEditor.ts)
+- [extensions/git/src/historyItemDetailsProvider.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/historyItemDetailsProvider.ts)
+- [extensions/git/src/historyProvider.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/historyProvider.ts)
+- [extensions/git/src/ipc/ipcServer.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/ipc/ipcServer.ts)
+- [extensions/git/src/main.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/main.ts)
+- [extensions/git/src/model.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/model.ts)
+- [extensions/git/src/operation.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/operation.ts)
+- [extensions/git/src/postCommitCommands.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/postCommitCommands.ts)
+- [extensions/git/src/repository.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/repository.ts)
+- [extensions/git/src/statusbar.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/statusbar.ts)
+- [extensions/git/src/terminal.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/terminal.ts)
+- [extensions/git/src/timelineProvider.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/timelineProvider.ts)
+- [extensions/git/src/util.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/util.ts)
+- [extensions/git/tsconfig.json](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/tsconfig.json)
+- [extensions/github/src/typings/git.d.ts](https://github.com/microsoft/vscode/blob/HEAD/extensions/github/src/typings/git.d.ts)
+- [src/vs/workbench/api/browser/mainThreadSCM.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/api/browser/mainThreadSCM.ts)
+- [src/vs/workbench/api/common/extHostSCM.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/api/common/extHostSCM.ts)
+- [src/vs/workbench/contrib/scm/browser/activity.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/activity.ts)
+- [src/vs/workbench/contrib/scm/browser/media/scm.css](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/media/scm.css)
+- [src/vs/workbench/contrib/scm/browser/menus.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/menus.ts)
+- [src/vs/workbench/contrib/scm/browser/scm.contribution.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scm.contribution.ts)
+- [src/vs/workbench/contrib/scm/browser/scmHistory.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmHistory.ts)
+- [src/vs/workbench/contrib/scm/browser/scmHistoryViewPane.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmHistoryViewPane.ts)
+- [src/vs/workbench/contrib/scm/browser/scmRepositoriesViewPane.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmRepositoriesViewPane.ts)
+- [src/vs/workbench/contrib/scm/browser/scmRepositoryRenderer.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmRepositoryRenderer.ts)
+- [src/vs/workbench/contrib/scm/browser/scmViewPane.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmViewPane.ts)
+- [src/vs/workbench/contrib/scm/browser/scmViewService.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmViewService.ts)
+- [src/vs/workbench/contrib/scm/browser/util.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/util.ts)
+- [src/vs/workbench/contrib/scm/browser/workingSet.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/workingSet.ts)
+- [src/vs/workbench/contrib/scm/common/artifact.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/artifact.ts)
+- [src/vs/workbench/contrib/scm/common/history.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/history.ts)
+- [src/vs/workbench/contrib/scm/common/scm.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/scm.ts)
+- [src/vs/workbench/contrib/scm/test/browser/scmHistory.test.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/test/browser/scmHistory.test.ts)
+- [src/vscode-dts/vscode.proposed.scmArtifactProvider.d.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vscode-dts/vscode.proposed.scmArtifactProvider.d.ts)
+- [src/vscode-dts/vscode.proposed.scmHistoryProvider.d.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vscode-dts/vscode.proposed.scmHistoryProvider.d.ts)
+- [test/automation/src/statusbar.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/statusbar.ts)
 
 </details>
 
@@ -78,19 +78,19 @@ The SCM framework provides the UI and service layer for managing source control 
 ### Core Components and Services
 
 *   **`ISCMService`**: The central service for registering and managing SCM providers. It tracks all active repositories across the workspace.
-    *   Defined in: [src/vs/workbench/contrib/scm/common/scm.ts:507-526]()
+    *   Defined in: [src/vs/workbench/contrib/scm/common/scm.ts:507-526](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/scm.ts#L507-L526)
 *   **`ISCMProvider`**: The interface an extension must implement to provide SCM functionality. It includes metadata like `label` and `contextValue`.
-    *   Defined in: [src/vs/workbench/contrib/scm/common/scm.ts:446-465]()
+    *   Defined in: [src/vs/workbench/contrib/scm/common/scm.ts:446-465](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/scm.ts#L446-L465)
 *   **`ISCMRepository`**: Represents an instance of a source control repository, linking a provider with a specific URI (usually the workspace root).
-    *   Defined in: [src/vs/workbench/contrib/scm/common/scm.ts:491-505]()
+    *   Defined in: [src/vs/workbench/contrib/scm/common/scm.ts:491-505](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/scm.ts#L491-L505)
 
 ### User Interface
 
-The SCM UI is primarily hosted in the Source Control view container in the Sidebar, registered via the `SCMViewPaneContainer` [src/vs/workbench/contrib/scm/browser/scm.contribution.ts:56-65]().
+The SCM UI is primarily hosted in the Source Control view container in the Sidebar, registered via the `SCMViewPaneContainer` [src/vs/workbench/contrib/scm/browser/scm.contribution.ts:56-65](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scm.contribution.ts#L56-L65).
 
-*   **`SCMViewPane`**: The main view displaying changes, staged files, and the `SCMInputWidget` [src/vs/workbench/contrib/scm/browser/scmViewPane.ts:77-78]() for commit messages. It uses a `WorkbenchCompressibleAsyncDataTree` to render the resource hierarchy [src/vs/workbench/contrib/scm/browser/scmViewPane.ts:28-28]().
-*   **`SCMHistoryViewPane`**: A dedicated view for visualizing source control history, including graph rendering, incoming/outgoing changes, and timeline integration [src/vs/workbench/contrib/scm/browser/scmHistoryViewPane.ts:32-33]().
-*   **`SCMRepositoriesViewPane`**: A view that allows users to manage multiple repositories when working in a multi-root workspace or with submodules [src/vs/workbench/contrib/scm/browser/scmRepositoriesViewPane.ts:26-26]().
+*   **`SCMViewPane`**: The main view displaying changes, staged files, and the `SCMInputWidget` [src/vs/workbench/contrib/scm/browser/scmViewPane.ts:77-78](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmViewPane.ts#L77-L78) for commit messages. It uses a `WorkbenchCompressibleAsyncDataTree` to render the resource hierarchy [src/vs/workbench/contrib/scm/browser/scmViewPane.ts:28-28](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmViewPane.ts#L28).
+*   **`SCMHistoryViewPane`**: A dedicated view for visualizing source control history, including graph rendering, incoming/outgoing changes, and timeline integration [src/vs/workbench/contrib/scm/browser/scmHistoryViewPane.ts:32-33](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmHistoryViewPane.ts#L32-L33).
+*   **`SCMRepositoriesViewPane`**: A view that allows users to manage multiple repositories when working in a multi-root workspace or with submodules [src/vs/workbench/contrib/scm/browser/scmRepositoriesViewPane.ts:26-26](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmRepositoriesViewPane.ts#L26).
 
 For deep technical details on the framework, history providers, and the extension host API, see **[SCM Framework](#9.1)**.
 
@@ -104,9 +104,9 @@ The Git extension is a built-in extension that implements the SCM framework for 
 
 The extension follows a model-view-controller pattern where the `Model` manages multiple `Repository` instances.
 
-*   **`Git` Class**: A low-level wrapper around the Git CLI. It handles process execution (`spawn`), version detection, and output parsing [extensions/git/src/git.ts:24-27]().
-*   **`Model`**: The root of the extension's state, responsible for repository discovery (including submodules and worktrees) and life-cycle management [extensions/git/src/model.ts:186-186]().
-*   **`Repository`**: Bridges the low-level `Git` operations with the VS Code `SourceControl` API. It manages state transitions for staging, committing, and branch operations [extensions/git/src/repository.ts:13-13]().
+*   **`Git` Class**: A low-level wrapper around the Git CLI. It handles process execution (`spawn`), version detection, and output parsing [extensions/git/src/git.ts:24-27](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/git.ts#L24-L27).
+*   **`Model`**: The root of the extension's state, responsible for repository discovery (including submodules and worktrees) and life-cycle management [extensions/git/src/model.ts:186-186](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/model.ts#L186).
+*   **`Repository`**: Bridges the low-level `Git` operations with the VS Code `SourceControl` API. It manages state transitions for staging, committing, and branch operations [extensions/git/src/repository.ts:13-13](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/repository.ts#L13).
 
 ### Interaction Flow: Git CLI to Workbench
 
@@ -136,14 +136,14 @@ graph TD
     SCMS -- "Event" --> VP
     VP -- "Render Tree" --> VP
 ```
-Sources: [extensions/git/src/git.ts:210-210](), [extensions/git/src/repository.ts:13-13](), [src/vs/workbench/contrib/scm/browser/scmViewPane.ts:14-14]()
+Sources: [extensions/git/src/git.ts:210-210](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/git.ts#L210), [extensions/git/src/repository.ts:13-13](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/repository.ts#L13), [src/vs/workbench/contrib/scm/browser/scmViewPane.ts:14-14](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/browser/scmViewPane.ts#L14)
 
 ### Key Features
 
-*   **Authentication (Askpass)**: Handles Git credentials via a custom IPC bridge (`Askpass`) between the Git process and the VS Code credentials store [extensions/git/src/askpass.ts:16-16]().
-*   **CommandCenter**: Centralizes Git-specific commands (clone, init, commit, branch) and exposes them to the Command Palette and context menus [extensions/git/src/commands.ts:12-22]().
-*   **History and Graph**: Provides commit history and branch visualization through the `GitHistoryProvider` [extensions/git/src/historyProvider.ts:43-44]().
-*   **Autofetch**: Automatically fetches updates from remotes at configured intervals [extensions/git/src/autofetch.ts:15-15]().
+*   **Authentication (Askpass)**: Handles Git credentials via a custom IPC bridge (`Askpass`) between the Git process and the VS Code credentials store [extensions/git/src/askpass.ts:16-16](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/askpass.ts#L16).
+*   **CommandCenter**: Centralizes Git-specific commands (clone, init, commit, branch) and exposes them to the Command Palette and context menus [extensions/git/src/commands.ts:12-22](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/commands.ts#L12-L22).
+*   **History and Graph**: Provides commit history and branch visualization through the `GitHistoryProvider` [extensions/git/src/historyProvider.ts:43-44](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/historyProvider.ts#L43-L44).
+*   **Autofetch**: Automatically fetches updates from remotes at configured intervals [extensions/git/src/autofetch.ts:15-15](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/autofetch.ts#L15).
 
 For details on the Git class hierarchy, credential handling, and the public Git API, see **[Git Extension](#9.2)**.
 
@@ -170,7 +170,7 @@ graph LR
     ExtSCM -- "registerSourceControl (RPC)" --> MainSCM
     MainSCM -- "ISCMService.registerSCMProvider()" --> CoreSCM
 ```
-Sources: [src/vs/workbench/api/common/extHostSCM.ts:468-468](), [src/vs/workbench/api/browser/mainThreadSCM.ts:168-168](), [extensions/git/src/main.ts:1-10](), [src/vs/workbench/contrib/scm/common/scm.ts:507-507]()
+Sources: [src/vs/workbench/api/common/extHostSCM.ts:468-468](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/api/common/extHostSCM.ts#L468), [src/vs/workbench/api/browser/mainThreadSCM.ts:168-168](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/api/browser/mainThreadSCM.ts#L168), [extensions/git/src/main.ts:1-10](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/main.ts#L1-L10), [src/vs/workbench/contrib/scm/common/scm.ts:507-507](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/scm.ts#L507)
 
 ### Key Interfaces and Mappings
 
@@ -185,4 +185,4 @@ The following table shows how concepts in the `vscode` extension API map to the 
 | **History** | `SourceControlHistoryProvider` | `ISCMHistoryProvider` |
 | **Artifact** | `SourceControlArtifactProvider` | `ISCMArtifactProvider` |
 
-Sources: [extensions/git/src/api/git.d.ts:6-6](), [src/vs/workbench/contrib/scm/common/scm.ts:14-14](), [src/vs/workbench/contrib/scm/common/history.ts:32-33](), [src/vs/workbench/contrib/scm/common/artifact.ts:1-5]()
+Sources: [extensions/git/src/api/git.d.ts:6-6](https://github.com/microsoft/vscode/blob/HEAD/extensions/git/src/api/git.d.ts#L6), [src/vs/workbench/contrib/scm/common/scm.ts:14-14](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/scm.ts#L14), [src/vs/workbench/contrib/scm/common/history.ts:32-33](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/history.ts#L32-L33), [src/vs/workbench/contrib/scm/common/artifact.ts:1-5](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/contrib/scm/common/artifact.ts#L1-L5)

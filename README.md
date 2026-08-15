@@ -76,6 +76,7 @@ usage: deepwiki [-h] [--version] [-o OUTPUT] [-f {all,split,combined,json}]
 | :--- | :--- | :--- | :--- |
 | `url` | - | *Required* | GitHub URL (`https://github.com/owner/repo`), DeepWiki URL, or `owner/repo` |
 | `--output` | `-o` | `./docs` | Destination directory for saved files |
+| `--branch` | `-b` | `HEAD` | Target GitHub branch, tag, or commit ref for source file links |
 | `--format` | `-f` | `split` | Output format: `split`, `combined`, `json`, or `all` |
 | `--concurrency` | `-c` | `5` | Number of parallel browser workers |
 | `--max-pages` | `-m` | `None` | Limit number of chapters to scrape (default: scrape ALL chapters) |

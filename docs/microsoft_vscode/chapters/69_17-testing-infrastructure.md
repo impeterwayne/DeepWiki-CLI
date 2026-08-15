@@ -13,58 +13,58 @@ mermaid_diagrams: 2
 
 The following files were used as context for generating this wiki page:
 
-- [.github/agents/demonstrate.md](.github/agents/demonstrate.md)
-- [.vscode/mcp.json](.vscode/mcp.json)
-- [build/package-lock.json](build/package-lock.json)
-- [build/package.json](build/package.json)
-- [src/typings/editContext.d.ts](src/typings/editContext.d.ts)
-- [src/vs/workbench/services/driver/browser/driver.ts](src/vs/workbench/services/driver/browser/driver.ts)
-- [test/automation/package-lock.json](test/automation/package-lock.json)
-- [test/automation/package.json](test/automation/package.json)
-- [test/automation/src/application.ts](test/automation/src/application.ts)
-- [test/automation/src/code.ts](test/automation/src/code.ts)
-- [test/automation/src/debug.ts](test/automation/src/debug.ts)
-- [test/automation/src/editor.ts](test/automation/src/editor.ts)
-- [test/automation/src/editors.ts](test/automation/src/editors.ts)
-- [test/automation/src/electron.ts](test/automation/src/electron.ts)
-- [test/automation/src/extensions.ts](test/automation/src/extensions.ts)
-- [test/automation/src/notebook.ts](test/automation/src/notebook.ts)
-- [test/automation/src/playwrightBrowser.ts](test/automation/src/playwrightBrowser.ts)
-- [test/automation/src/playwrightDriver.ts](test/automation/src/playwrightDriver.ts)
-- [test/automation/src/playwrightElectron.ts](test/automation/src/playwrightElectron.ts)
-- [test/automation/src/scm.ts](test/automation/src/scm.ts)
-- [test/automation/src/search.ts](test/automation/src/search.ts)
-- [test/automation/src/settings.ts](test/automation/src/settings.ts)
-- [test/integration/browser/package-lock.json](test/integration/browser/package-lock.json)
-- [test/integration/browser/package.json](test/integration/browser/package.json)
-- [test/mcp/README.md](test/mcp/README.md)
-- [test/mcp/package-lock.json](test/mcp/package-lock.json)
-- [test/mcp/package.json](test/mcp/package.json)
-- [test/mcp/src/application.ts](test/mcp/src/application.ts)
-- [test/mcp/src/automation.ts](test/mcp/src/automation.ts)
-- [test/mcp/src/automationTools/chat.ts](test/mcp/src/automationTools/chat.ts)
-- [test/mcp/src/automationTools/core.ts](test/mcp/src/automationTools/core.ts)
-- [test/mcp/src/automationTools/index.ts](test/mcp/src/automationTools/index.ts)
-- [test/mcp/src/automationTools/settings.ts](test/mcp/src/automationTools/settings.ts)
-- [test/mcp/src/automationTools/windows.ts](test/mcp/src/automationTools/windows.ts)
-- [test/mcp/src/evidence.ts](test/mcp/src/evidence.ts)
-- [test/mcp/src/options.ts](test/mcp/src/options.ts)
-- [test/mcp/src/stdio.ts](test/mcp/src/stdio.ts)
-- [test/mcp/src/utils.ts](test/mcp/src/utils.ts)
-- [test/smoke/package-lock.json](test/smoke/package-lock.json)
-- [test/smoke/package.json](test/smoke/package.json)
-- [test/smoke/src/areas/extensions/extensions.test.ts](test/smoke/src/areas/extensions/extensions.test.ts)
-- [test/smoke/src/areas/languages/languages.test.ts](test/smoke/src/areas/languages/languages.test.ts)
-- [test/smoke/src/areas/multiroot/multiroot.test.ts](test/smoke/src/areas/multiroot/multiroot.test.ts)
-- [test/smoke/src/areas/notebook/notebook.test.ts](test/smoke/src/areas/notebook/notebook.test.ts)
-- [test/smoke/src/areas/preferences/preferences.test.ts](test/smoke/src/areas/preferences/preferences.test.ts)
-- [test/smoke/src/areas/search/search.test.ts](test/smoke/src/areas/search/search.test.ts)
-- [test/smoke/src/areas/statusbar/statusbar.test.ts](test/smoke/src/areas/statusbar/statusbar.test.ts)
-- [test/smoke/src/areas/workbench/data-loss.test.ts](test/smoke/src/areas/workbench/data-loss.test.ts)
-- [test/smoke/src/areas/workbench/launch.test.ts](test/smoke/src/areas/workbench/launch.test.ts)
-- [test/smoke/src/areas/workbench/localization.test.ts](test/smoke/src/areas/workbench/localization.test.ts)
-- [test/smoke/src/main.ts](test/smoke/src/main.ts)
-- [test/smoke/src/utils.ts](test/smoke/src/utils.ts)
+- [.github/agents/demonstrate.md](https://github.com/microsoft/vscode/blob/HEAD/.github/agents/demonstrate.md)
+- [.vscode/mcp.json](https://github.com/microsoft/vscode/blob/HEAD/.vscode/mcp.json)
+- [build/package-lock.json](https://github.com/microsoft/vscode/blob/HEAD/build/package-lock.json)
+- [build/package.json](https://github.com/microsoft/vscode/blob/HEAD/build/package.json)
+- [src/typings/editContext.d.ts](https://github.com/microsoft/vscode/blob/HEAD/src/typings/editContext.d.ts)
+- [src/vs/workbench/services/driver/browser/driver.ts](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/services/driver/browser/driver.ts)
+- [test/automation/package-lock.json](https://github.com/microsoft/vscode/blob/HEAD/test/automation/package-lock.json)
+- [test/automation/package.json](https://github.com/microsoft/vscode/blob/HEAD/test/automation/package.json)
+- [test/automation/src/application.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts)
+- [test/automation/src/code.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts)
+- [test/automation/src/debug.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/debug.ts)
+- [test/automation/src/editor.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/editor.ts)
+- [test/automation/src/editors.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/editors.ts)
+- [test/automation/src/electron.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/electron.ts)
+- [test/automation/src/extensions.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/extensions.ts)
+- [test/automation/src/notebook.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/notebook.ts)
+- [test/automation/src/playwrightBrowser.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightBrowser.ts)
+- [test/automation/src/playwrightDriver.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightDriver.ts)
+- [test/automation/src/playwrightElectron.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightElectron.ts)
+- [test/automation/src/scm.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/scm.ts)
+- [test/automation/src/search.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/search.ts)
+- [test/automation/src/settings.ts](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/settings.ts)
+- [test/integration/browser/package-lock.json](https://github.com/microsoft/vscode/blob/HEAD/test/integration/browser/package-lock.json)
+- [test/integration/browser/package.json](https://github.com/microsoft/vscode/blob/HEAD/test/integration/browser/package.json)
+- [test/mcp/README.md](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/README.md)
+- [test/mcp/package-lock.json](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/package-lock.json)
+- [test/mcp/package.json](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/package.json)
+- [test/mcp/src/application.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/application.ts)
+- [test/mcp/src/automation.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/automation.ts)
+- [test/mcp/src/automationTools/chat.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/automationTools/chat.ts)
+- [test/mcp/src/automationTools/core.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/automationTools/core.ts)
+- [test/mcp/src/automationTools/index.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/automationTools/index.ts)
+- [test/mcp/src/automationTools/settings.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/automationTools/settings.ts)
+- [test/mcp/src/automationTools/windows.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/automationTools/windows.ts)
+- [test/mcp/src/evidence.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/evidence.ts)
+- [test/mcp/src/options.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/options.ts)
+- [test/mcp/src/stdio.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/stdio.ts)
+- [test/mcp/src/utils.ts](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/src/utils.ts)
+- [test/smoke/package-lock.json](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/package-lock.json)
+- [test/smoke/package.json](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/package.json)
+- [test/smoke/src/areas/extensions/extensions.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/extensions/extensions.test.ts)
+- [test/smoke/src/areas/languages/languages.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/languages/languages.test.ts)
+- [test/smoke/src/areas/multiroot/multiroot.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/multiroot/multiroot.test.ts)
+- [test/smoke/src/areas/notebook/notebook.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/notebook/notebook.test.ts)
+- [test/smoke/src/areas/preferences/preferences.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/preferences/preferences.test.ts)
+- [test/smoke/src/areas/search/search.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/search/search.test.ts)
+- [test/smoke/src/areas/statusbar/statusbar.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/statusbar/statusbar.test.ts)
+- [test/smoke/src/areas/workbench/data-loss.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/workbench/data-loss.test.ts)
+- [test/smoke/src/areas/workbench/launch.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/workbench/launch.test.ts)
+- [test/smoke/src/areas/workbench/localization.test.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/areas/workbench/localization.test.ts)
+- [test/smoke/src/main.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/main.ts)
+- [test/smoke/src/utils.ts](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/utils.ts)
 
 </details>
 
@@ -82,7 +82,7 @@ The testing stack is categorized by the scope of the code under test and the env
 | **Integration Tests** | Extension API and Workbench services | Full VS Code Instance | Mocha + `vscode-api-tests` |
 | **Smoke Tests** | End-to-end user scenarios | Electron / Playwright (Web) | Playwright + Automation Lib |
 
-The automation infrastructure is coordinated through the `test/automation/` directory, which provides a high-level driver for interacting with the VS Code UI [test/automation/src/code.ts:119-149]().
+The automation infrastructure is coordinated through the `test/automation/` directory, which provides a high-level driver for interacting with the VS Code UI [test/automation/src/code.ts:119-149](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L119-L149).
 
 ### Component Relationship
 
@@ -112,7 +112,7 @@ graph TD
     style AL stroke-dasharray: 5 5
     style PD stroke-dasharray: 5 5
 ```
-Sources: [test/automation/src/application.ts:23-25](), [test/automation/src/playwrightDriver.ts:47-48](), [test/automation/src/code.ts:97-117](), [src/vs/workbench/services/driver/browser/driver.ts:1-10]()
+Sources: [test/automation/src/application.ts:23-25](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts#L23-L25), [test/automation/src/playwrightDriver.ts:47-48](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightDriver.ts#L47-L48), [test/automation/src/code.ts:97-117](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L97-L117), [src/vs/workbench/services/driver/browser/driver.ts:1-10](https://github.com/microsoft/vscode/blob/HEAD/src/vs/workbench/services/driver/browser/driver.ts#L1-L10)
 
 ---
 
@@ -131,19 +131,19 @@ For details, see [Unit and Integration Tests](#17.1).
 
 ## Smoke Tests and Automation
 
-Smoke tests verify that major features (Search, Notebooks, Extensions, Terminal) work correctly from an end-user perspective [test/smoke/src/main.ts:17-38]().
+Smoke tests verify that major features (Search, Notebooks, Extensions, Terminal) work correctly from an end-user perspective [test/smoke/src/main.ts:17-38](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/main.ts#L17-L38).
 
 ### Automation Library
 The `test/automation/` package acts as the "Standard Library" for testing VS Code. It encapsulates complex UI interactions into simple method calls:
-- `Workbench`: Provides access to parts like `QuickAccess`, `Editors`, and `SCM` [test/automation/src/application.ts:127-128]().
-- `Code`: Manages the lifecycle of the application process and provides the `dispatchKeybinding` utility [test/automation/src/code.ts:176-178]().
-- `PlaywrightDriver`: A wrapper around Playwright that handles window switching, screenshots, and accessibility snapshots [test/automation/src/playwrightDriver.ts:109-132]().
+- `Workbench`: Provides access to parts like `QuickAccess`, `Editors`, and `SCM` [test/automation/src/application.ts:127-128](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts#L127-L128).
+- `Code`: Manages the lifecycle of the application process and provides the `dispatchKeybinding` utility [test/automation/src/code.ts:176-178](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L176-L178).
+- `PlaywrightDriver`: A wrapper around Playwright that handles window switching, screenshots, and accessibility snapshots [test/automation/src/playwrightDriver.ts:109-132](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightDriver.ts#L109-L132).
 
 ### MCP Automation Server
-The infrastructure includes a Model Context Protocol (MCP) server integration located in `test/mcp/`. This allows AI agents to interact with the VS Code automation tools via a standardized protocol using the `@modelcontextprotocol/sdk` [test/mcp/package.json:12-12](). This integration allows external models to query workbench state and trigger actions using MCP tools defined in `test/mcp/src/automationTools/`.
+The infrastructure includes a Model Context Protocol (MCP) server integration located in `test/mcp/`. This allows AI agents to interact with the VS Code automation tools via a standardized protocol using the `@modelcontextprotocol/sdk` [test/mcp/package.json:12-12](https://github.com/microsoft/vscode/blob/HEAD/test/mcp/package.json#L12). This integration allows external models to query workbench state and trigger actions using MCP tools defined in `test/mcp/src/automationTools/`.
 
 ### Smoke Test Execution Flow
-Smoke tests can target different builds (Stable, Insiders, or Dev) and different platforms (Desktop Electron or Web) [test/smoke/src/main.ts:211-224]().
+Smoke tests can target different builds (Stable, Insiders, or Dev) and different platforms (Desktop Electron or Web) [test/smoke/src/main.ts:211-224](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/main.ts#L211-L224).
 
 **Smoke Test Execution Flow**
 ```mermaid
@@ -164,7 +164,7 @@ sequenceDiagram
     App->>PW: "clickSelector()"
     PW->>VSCode: "Playwright Interaction"
 ```
-Sources: [test/smoke/src/main.ts:211-224](), [test/automation/src/application.ts:81-156](), [test/automation/src/playwrightDriver.ts:205-207](), [test/automation/src/code.ts:103-117]()
+Sources: [test/smoke/src/main.ts:211-224](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/main.ts#L211-L224), [test/automation/src/application.ts:81-156](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts#L81-L156), [test/automation/src/playwrightDriver.ts:205-207](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightDriver.ts#L205-L207), [test/automation/src/code.ts:103-117](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L103-L117)
 
 For details, see [Smoke Tests and Automation](#17.2).
 
@@ -176,11 +176,11 @@ The following table maps high-level testing concepts to their respective code en
 
 | Code Entity | Role | Path |
 | :--- | :--- | :--- |
-| `Application` | Main entry point for automation scripts; manages the `Code` and `Workbench` instances. | [test/automation/src/application.ts:23-25]() |
-| `Code` | Wrapper for the application process; provides `dispatchKeybinding` and lifecycle management. | [test/automation/src/code.ts:119-149]() |
-| `PlaywrightDriver` | Low-level browser/Electron interaction using Playwright; handles window switching and element locators. | [test/automation/src/playwrightDriver.ts:47-48]() |
-| `MultiLogger` | Aggregates multiple logging strategies such as `ConsoleLogger` and `FileLogger`. | [test/smoke/src/main.ts:107-123]() |
-| `Quality` | Enum defining the build quality being tested (Dev, Insiders, Stable, etc.). | [test/automation/src/application.ts:11-17]() |
-| `LaunchOptions` | Configuration interface for spawning the test instance, including `userDataDir` and `extraArgs`. | [test/automation/src/code.ts:17-48]() |
+| `Application` | Main entry point for automation scripts; manages the `Code` and `Workbench` instances. | [test/automation/src/application.ts:23-25](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts#L23-L25) |
+| `Code` | Wrapper for the application process; provides `dispatchKeybinding` and lifecycle management. | [test/automation/src/code.ts:119-149](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L119-L149) |
+| `PlaywrightDriver` | Low-level browser/Electron interaction using Playwright; handles window switching and element locators. | [test/automation/src/playwrightDriver.ts:47-48](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightDriver.ts#L47-L48) |
+| `MultiLogger` | Aggregates multiple logging strategies such as `ConsoleLogger` and `FileLogger`. | [test/smoke/src/main.ts:107-123](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/main.ts#L107-L123) |
+| `Quality` | Enum defining the build quality being tested (Dev, Insiders, Stable, etc.). | [test/automation/src/application.ts:11-17](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts#L11-L17) |
+| `LaunchOptions` | Configuration interface for spawning the test instance, including `userDataDir` and `extraArgs`. | [test/automation/src/code.ts:17-48](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L17-L48) |
 
-Sources: [test/automation/src/application.ts:23-25](), [test/automation/src/code.ts:119-149](), [test/automation/src/playwrightDriver.ts:47-48](), [test/smoke/src/main.ts:107-123](), [test/automation/src/application.ts:11-17](), [test/automation/src/code.ts:17-48]()
+Sources: [test/automation/src/application.ts:23-25](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts#L23-L25), [test/automation/src/code.ts:119-149](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L119-L149), [test/automation/src/playwrightDriver.ts:47-48](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/playwrightDriver.ts#L47-L48), [test/smoke/src/main.ts:107-123](https://github.com/microsoft/vscode/blob/HEAD/test/smoke/src/main.ts#L107-L123), [test/automation/src/application.ts:11-17](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/application.ts#L11-L17), [test/automation/src/code.ts:17-48](https://github.com/microsoft/vscode/blob/HEAD/test/automation/src/code.ts#L17-L48)
