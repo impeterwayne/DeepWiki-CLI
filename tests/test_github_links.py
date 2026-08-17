@@ -11,7 +11,15 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from deepwiki_crawler import convert_markdown_links_to_github, make_github_file_url, is_repo_path
+from deepwiki_crawler import (
+    convert_markdown_links_to_github,
+    make_github_file_url,
+    is_repo_path,
+    build_chapter_lookup,
+    resolve_page_chapter_links,
+    WikiPageMeta,
+    CrawledPage,
+)
 
 
 class TestGitHubLinkConverter(unittest.TestCase):
@@ -63,11 +71,13 @@ class TestGitHubLinkConverter(unittest.TestCase):
         md = (
             "<details>\n"
             "<summary>Relevant source files</summary>\n\n"
+            "- [README.md](README.md)\n"
             "- [.npmrc](.npmrc)\n"
             "- [extensions/github-authentication/media/auth.css](extensions/github-authentication/media/auth.css)\n"
             "</details>"
         )
         res = convert_markdown_links_to_github(md, self.owner, self.repo)
+        self.assertIn("https://github.com/microsoft/vscode/blob/HEAD/README.md", res)
         self.assertIn("https://github.com/microsoft/vscode/blob/HEAD/.npmrc", res)
         self.assertIn("https://github.com/microsoft/vscode/blob/HEAD/extensions/github-authentication/media/auth.css", res)
 
@@ -153,6 +163,149 @@ class TestGitHubLinkConverter(unittest.TestCase):
         self.assertNotIn("]`", res)
         self.assertIn("[jadx-core/src/main/java/jadx/api/JadxDecompiler.java:59-85](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/api/JadxDecompiler.java#L59-L85)", res)
         self.assertIn("[README.md:14-26](https://github.com/skylot/jadx/blob/HEAD/README.md#L14-L26)", res)
+
+
+class TestChapterLinkResolution(unittest.TestCase):
+    def setUp(self):
+        self.pages = [
+            CrawledPage(
+                meta=WikiPageMeta(
+                    index=1,
+                    title="Overview",
+                    url="https://deepwiki.com/skylot/jadx/1-overview",
+                    slug="1-overview",
+                    chapter_num="1",
+                ),
+                markdown=(
+                    "# Overview\n\n"
+                    "## Purpose and Scope\n"
+                    "Intro text.\n\n"
+                    "For detailed info:\n"
+                    "- Installation: see [Getting Started](#1.1)\n"
+                    "- Deep dive: see [Architecture Overview](#1.2)\n"
+                    "- Build: see [Build System and Distribution](#5)\n"
+                    "- Plugin: see [Plugin System](#6)\n"
+                    "- Local section: see [Purpose and Scope](#purpose-and-scope)\n"
+                ),
+                success=True,
+            ),
+            CrawledPage(
+                meta=WikiPageMeta(
+                    index=2,
+                    title="Getting Started",
+                    url="https://deepwiki.com/skylot/jadx/1.1-getting-started",
+                    slug="1.1-getting-started",
+                    chapter_num="1.1",
+                ),
+                markdown="# Getting Started\n\nInstall instructions.",
+                success=True,
+            ),
+            CrawledPage(
+                meta=WikiPageMeta(
+                    index=3,
+                    title="Architecture Overview",
+                    url="https://deepwiki.com/skylot/jadx/1.2-architecture-overview",
+                    slug="1.2-architecture-overview",
+                    chapter_num="1.2",
+                ),
+                markdown="# Architecture Overview\n\nArchitecture details.",
+                success=True,
+            ),
+            CrawledPage(
+                meta=WikiPageMeta(
+                    index=6,
+                    title="Decompilation Pipeline",
+                    url="https://deepwiki.com/skylot/jadx/2.2-decompilation-pipeline",
+                    slug="2.2-decompilation-pipeline",
+                    chapter_num="2.2",
+                ),
+                markdown=(
+                    "# Decompilation Pipeline\n\n"
+                    "## SSA Transformation Phase\n"
+                    "Details on SSA."
+                ),
+                success=True,
+            ),
+            CrawledPage(
+                meta=WikiPageMeta(
+                    index=24,
+                    title="Build System and Distribution",
+                    url="https://deepwiki.com/skylot/jadx/5-build-system-and-distribution",
+                    slug="5-build-system-and-distribution",
+                    chapter_num="5",
+                ),
+                markdown="# Build System and Distribution\n\nBuild details.",
+                success=True,
+            ),
+            CrawledPage(
+                meta=WikiPageMeta(
+                    index=29,
+                    title="Plugin System",
+                    url="https://deepwiki.com/skylot/jadx/6-plugin-system",
+                    slug="6-plugin-system",
+                    chapter_num="6",
+                ),
+                markdown="# Plugin System\n\nPlugin details.",
+                success=True,
+            ),
+        ]
+        self.chapter_map, self.page_headings = build_chapter_lookup(self.pages, "skylot", "jadx")
+
+    def test_cross_chapter_links_in_overview(self):
+        page1 = self.pages[0]
+        res = resolve_page_chapter_links(
+            page1.markdown,
+            page1.meta.index,
+            self.chapter_map,
+            self.page_headings,
+            target_mode="split",
+        )
+        self.assertIn("[Getting Started](02_1.1-getting-started.md)", res)
+        self.assertIn("[Architecture Overview](03_1.2-architecture-overview.md)", res)
+        self.assertIn("[Build System and Distribution](24_5-build-system-and-distribution.md)", res)
+        self.assertIn("[Plugin System](29_6-plugin-system.md)", res)
+        # Local heading on current page remains an in-page anchor
+        self.assertIn("[Purpose and Scope](#purpose-and-scope)", res)
+
+    def test_cross_chapter_subheading_link(self):
+        md = "For SSA info, see [SSA Transformation Phase](#ssa-transformation-phase)."
+        res = resolve_page_chapter_links(
+            md,
+            1,  # from page 1
+            self.chapter_map,
+            self.page_headings,
+            target_mode="split",
+        )
+        self.assertEqual(
+            res,
+            "For SSA info, see [SSA Transformation Phase](06_2.2-decompilation-pipeline.md#ssa-transformation-phase)."
+        )
+
+    def test_empty_url_chapter_name_resolution(self):
+        md = "Check [Getting Started]() and [Decompilation Pipeline]()."
+        res = resolve_page_chapter_links(
+            md,
+            1,
+            self.chapter_map,
+            self.page_headings,
+            target_mode="split",
+        )
+        self.assertEqual(
+            res,
+            "Check [Getting Started](02_1.1-getting-started.md) and [Decompilation Pipeline](06_2.2-decompilation-pipeline.md)."
+        )
+
+    def test_combined_mode_resolution(self):
+        page1 = self.pages[0]
+        res = resolve_page_chapter_links(
+            page1.markdown,
+            page1.meta.index,
+            self.chapter_map,
+            self.page_headings,
+            target_mode="combined",
+        )
+        self.assertIn("[Getting Started](#getting-started)", res)
+        self.assertIn("[Architecture Overview](#architecture-overview)", res)
 
 
 if __name__ == "__main__":

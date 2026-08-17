@@ -111,3 +111,6 @@ env/
 
 # PyCharm settings
 .idea/
+
+# CLI Output Directory
+docs/

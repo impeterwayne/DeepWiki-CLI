@@ -765,7 +765,11 @@ def convert_markdown_links_to_github(
             url = m.group(2).strip()
 
             # Preserve absolute web links, anchors, and existing chapter markdown links
-            if url.startswith(('http://', 'https://', '#', 'mailto:', 'ftp:', 'chapters/', './chapters/')) or url.endswith('00_INDEX.md') or url.endswith('.md'):
+            if (
+                url.startswith(('http://', 'https://', '#', 'mailto:', 'ftp:', 'chapters/', './chapters/'))
+                or url.endswith('00_INDEX.md')
+                or bool(re.match(r'^\d{2}_.+\.md$', url))
+            ):
                 if f'github.com/{owner}/{repo}/blob/' in url:
                     m_path = re.search(rf'github\.com/{re.escape(owner)}/{re.escape(repo)}/blob/[^/]+/([^#\)\s\>\"]+)', url)
                     if m_path:
@@ -824,6 +828,157 @@ def convert_markdown_links_to_github(
     text = re.sub(r'`(\[[^\]\n]+\]\([^)\n]*\))`', r'\1', text)
 
     # 4. Restore Mermaid blocks
+    for idx, block in enumerate(mermaid_blocks):
+        text = text.replace(f"<!--MERMAID_BLOCK_{idx}-->", block)
+
+    return text
+
+
+def build_chapter_lookup(
+    pages: List[Any],
+    owner: str,
+    repo: str,
+) -> Tuple[Dict[str, str], Dict[int, set]]:
+    """
+    Builds lookup mapping from chapter titles, numbers, slugs, and headings to destination filenames.
+    Also collects local heading anchors per page to preserve intra-page navigation.
+    """
+    chapter_map: Dict[str, str] = {}
+    page_headings: Dict[int, set] = {}
+
+    for p in pages:
+        idx_str = f"{p.meta.index:02d}"
+        clean_slug = re.sub(r"[^\w\-.]", "_", p.meta.slug)
+        filename = f"{idx_str}_{clean_slug}.md"
+        page_idx = p.meta.index
+        page_headings[page_idx] = set()
+
+        # 1. Chapter Number mappings (e.g. #1.1, 1.1, chapter 1.1)
+        if p.meta.chapter_num:
+            cnum = str(p.meta.chapter_num).strip()
+            chapter_map[f"#{cnum}"] = filename
+            chapter_map[cnum] = filename
+            chapter_map[f"chapter {cnum}".lower()] = filename
+            chapter_map[f"chapter-{cnum}".lower()] = filename
+            chapter_map[f"#chapter-{cnum}".lower()] = filename
+
+        # 2. Slug mappings
+        slug = p.meta.slug.strip()
+        chapter_map[slug] = filename
+        chapter_map[slug.lower()] = filename
+        chapter_map[f"#{slug}".lower()] = filename
+        chapter_map[f"/{slug}".lower()] = filename
+        chapter_map[f"/{owner}/{repo}/{slug}".lower()] = filename
+        chapter_map[f"https://deepwiki.com/{owner}/{repo}/{slug}".lower()] = filename
+        chapter_map[f"http://deepwiki.com/{owner}/{repo}/{slug}".lower()] = filename
+
+        # 3. Title mappings
+        title = p.meta.title.strip()
+        chapter_map[title] = filename
+        chapter_map[title.lower()] = filename
+        t_anchor = re.sub(r"[^\w\- ]", "", title).lower().replace(" ", "-")
+        if t_anchor:
+            chapter_map[f"#{t_anchor}"] = filename
+            chapter_map[t_anchor] = filename
+
+        # Title without leading numbering (e.g. "1.1 Getting Started" -> "Getting Started")
+        t_nonum = re.sub(r"^[0-9.]+\s*", "", title).strip()
+        if t_nonum and t_nonum != title:
+            chapter_map[t_nonum] = filename
+            chapter_map[t_nonum.lower()] = filename
+            t_nonum_anchor = re.sub(r"[^\w\- ]", "", t_nonum).lower().replace(" ", "-")
+            if t_nonum_anchor:
+                chapter_map[f"#{t_nonum_anchor}"] = filename
+                chapter_map[t_nonum_anchor] = filename
+
+        # 4. Heading anchors inside page markdown
+        for h in re.finditer(r"^#{1,6}\s+(.+)$", p.markdown, re.MULTILINE):
+            h_text = h.group(1).strip()
+            h_clean = re.sub(r"[`*_~]", "", h_text).strip()
+            h_anchor = re.sub(r"[^\w\- ]", "", h_clean).lower().replace(" ", "-")
+            if h_anchor:
+                page_headings[page_idx].add(h_anchor)
+                target_with_anchor = f"{filename}#{h_anchor}"
+                if f"#{h_anchor}" not in chapter_map:
+                    chapter_map[f"#{h_anchor}"] = target_with_anchor
+                if h_clean.lower() not in chapter_map:
+                    chapter_map[h_clean.lower()] = target_with_anchor
+
+    return chapter_map, page_headings
+
+
+def resolve_page_chapter_links(
+    markdown: str,
+    current_page_idx: int,
+    chapter_map: Dict[str, str],
+    page_headings: Dict[int, set],
+    target_mode: str = "split",
+) -> str:
+    """
+    Transforms inter-chapter cross references for a single page into direct relative file links
+    or combined anchor links.
+    """
+    local_headings = page_headings.get(current_page_idx, set())
+
+    # Protect Mermaid blocks
+    mermaid_blocks = []
+    def _save_mermaid(m):
+        mermaid_blocks.append(m.group(0))
+        return f"<!--MERMAID_BLOCK_{len(mermaid_blocks) - 1}-->"
+
+    text = re.sub(r"```mermaid[\s\S]*?```", _save_mermaid, markdown)
+
+    def _repl(match):
+        label = match.group(1)
+        url = match.group(2).strip()
+
+        # Preserve GitHub URLs, mailto, external protocols (except deepwiki URLs)
+        if url.startswith(("mailto:", "ftp:")) or "github.com/" in url:
+            return match.group(0)
+
+        if url.startswith(("http://", "https://")) and "deepwiki.com" not in url:
+            return match.group(0)
+
+        clean_label = re.sub(r"[`*_~]", "", label).strip()
+
+        # 1. In-page anchor check: if url is a local heading on the current page, preserve it
+        if url.startswith("#"):
+            raw_anchor = url[1:].strip()
+            if raw_anchor in local_headings:
+                return match.group(0)
+
+        # 2. Lookup by URL or Anchor
+        target = None
+        if url:
+            target = chapter_map.get(url) or chapter_map.get(url.lower())
+            if not target and url.startswith("#"):
+                target = chapter_map.get(url[1:].strip()) or chapter_map.get(url[1:].strip().lower())
+
+        # 3. Lookup by clean label
+        if not target:
+            target = chapter_map.get(clean_label) or chapter_map.get(clean_label.lower())
+            if not target:
+                t_nonum = re.sub(r"^[0-9.]+\s*", "", clean_label).strip()
+                if t_nonum:
+                    target = chapter_map.get(t_nonum) or chapter_map.get(t_nonum.lower())
+
+        if not target:
+            return match.group(0)
+
+        if target_mode == "split":
+            return f"[{label}]({target})"
+        elif target_mode == "combined":
+            if "#" in target:
+                anchor = target.split("#", 1)[1]
+            else:
+                anchor = re.sub(r"[^\w\- ]", "", clean_label).lower().replace(" ", "-")
+            return f"[{label}](#{anchor})"
+
+        return match.group(0)
+
+    text = re.sub(r"\[([^\]\n]+)\]\(([^)\n]*)\)", _repl, text)
+
+    # Restore Mermaid blocks
     for idx, block in enumerate(mermaid_blocks):
         text = text.replace(f"<!--MERMAID_BLOCK_{idx}-->", block)
 
@@ -1251,6 +1406,7 @@ class DeepWikiCrawler:
         target_dir = os.path.join(self.output_dir, repo_dir_name)
         os.makedirs(target_dir, exist_ok=True)
 
+        chapter_map, page_headings = build_chapter_lookup(crawled_pages, self.owner, self.repo)
         saved_files = []
 
         # 1. Save Split Markdown files
@@ -1275,6 +1431,15 @@ class DeepWikiCrawler:
                 filename = f"{idx_str}_{clean_slug}.md"
                 file_path = os.path.join(split_dir, filename)
 
+                # Resolve chapter cross references for this page within chapters/
+                resolved_split_md = resolve_page_chapter_links(
+                    page.markdown,
+                    page.meta.index,
+                    chapter_map,
+                    page_headings,
+                    target_mode="split",
+                )
+
                 file_content = [
                     "---",
                     f"title: \"{page.meta.title}\"",
@@ -1284,7 +1449,7 @@ class DeepWikiCrawler:
                     f"mermaid_diagrams: {page.mermaid_count}",
                     "---",
                     "",
-                    page.markdown,
+                    resolved_split_md,
                 ]
 
                 with open(file_path, "w", encoding="utf-8") as f:
@@ -1322,9 +1487,16 @@ class DeepWikiCrawler:
             combined_lines.append("\n---\n")
 
             for page in crawled_pages:
+                resolved_comb_md = resolve_page_chapter_links(
+                    page.markdown,
+                    page.meta.index,
+                    chapter_map,
+                    page_headings,
+                    target_mode="combined",
+                )
                 combined_lines.append(f"<!-- Chapter {page.meta.index}: {page.meta.title} -->")
                 combined_lines.append(f"<!-- Source: {page.meta.url} -->\n")
-                combined_lines.append(page.markdown)
+                combined_lines.append(resolved_comb_md)
                 combined_lines.append("\n\n---\n")
 
             with open(combined_path, "w", encoding="utf-8") as f:
@@ -1350,7 +1522,13 @@ class DeepWikiCrawler:
                         "word_count": p.word_count,
                         "char_count": p.char_count,
                         "mermaid_count": p.mermaid_count,
-                        "markdown": p.markdown,
+                        "markdown": resolve_page_chapter_links(
+                            p.markdown,
+                            p.meta.index,
+                            chapter_map,
+                            page_headings,
+                            target_mode="split",
+                        ),
                     }
                     for p in crawled_pages
                 ],
