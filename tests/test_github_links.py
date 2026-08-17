@@ -102,6 +102,78 @@ class TestGitHubLinkConverter(unittest.TestCase):
             "[src/index.ts:10-20](https://github.com/owner/repo/blob/main/src/index.ts#L10-L20)"
         )
 
+    def test_extensionless_root_files_with_lines(self):
+        md = "Scripts: [gradlew:1-249](), [gradlew:203](), [Makefile:10-20]()."
+        res = convert_markdown_links_to_github(md, "skylot", "jadx")
+        self.assertEqual(
+            res,
+            "Scripts: [gradlew:1-249](https://github.com/skylot/jadx/blob/HEAD/gradlew#L1-L249), "
+            "[gradlew:203](https://github.com/skylot/jadx/blob/HEAD/gradlew#L203), "
+            "[Makefile:10-20](https://github.com/skylot/jadx/blob/HEAD/Makefile#L10-L20)."
+        )
+
+    def test_extensionless_root_files_bare(self):
+        md = "See [gradlew](gradlew) and [Makefile]()."
+        res = convert_markdown_links_to_github(md, "skylot", "jadx")
+        self.assertEqual(
+            res,
+            "See [gradlew](https://github.com/skylot/jadx/blob/HEAD/gradlew) and "
+            "[Makefile](https://github.com/skylot/jadx/blob/HEAD/Makefile)."
+        )
+
+    def test_contextual_line_citations(self):
+        md = (
+            "The `NameMapper` class enforces identifier legality. "
+            "[jadx-core/src/main/java/jadx/core/deobf/NameMapper.java:12-12](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/deobf/NameMapper.java#L12)\n\n"
+            "| Method | Purpose |\n"
+            "|---|---|\n"
+            "| `isReserved(String)` | Checks reserved word [line 77-79]() |\n"
+            "| `isValidIdentifier(String)` | Validates identifier [line 81-85]() |\n"
+            "| `multiLine()` | Multi range [line 102-132, 150-178]() |\n"
+        )
+        res = convert_markdown_links_to_github(md, "skylot", "jadx")
+        self.assertIn("[line 77-79](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/deobf/NameMapper.java#L77-L79)", res)
+        self.assertIn("[line 81-85](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/deobf/NameMapper.java#L81-L85)", res)
+        self.assertIn("[line 102-132, 150-178](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/deobf/NameMapper.java#L102-L132)", res)
+
+    def test_jadx_field_and_method_info_aliasing(self):
+        md = (
+            "Method aliasing in [jadx-core/src/main/java/jadx/core/dex/info/MethodInfo.java:15-204](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/dex/info/MethodInfo.java#L15-L204):\n"
+            "- **alias**: Deobfuscated name. [line 25, 29]()\n"
+            "- **setAlias(String)**: Updates the alias. [line 156-158]()\n"
+        )
+        res = convert_markdown_links_to_github(md, "skylot", "jadx")
+        self.assertIn("[line 25, 29](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/dex/info/MethodInfo.java#L25)", res)
+        self.assertIn("[line 156-158](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/dex/info/MethodInfo.java#L156-L158)", res)
+
+    def test_inter_chapter_resolution(self):
+        chapter_map = {
+            "decompilation pipeline": "chapters/06_2.2-decompilation-pipeline.md",
+            "2.2 decompilation pipeline": "chapters/06_2.2-decompilation-pipeline.md",
+            "code generation": "chapters/10_2.6-code-generation.md",
+            "5.1 gradle wrapper system": "chapters/25_5.1-gradle-wrapper-system.md",
+            "distribution and packaging": "chapters/27_5.3-distribution-and-packaging.md",
+            "ssa transformation phase": "chapters/06_2.2-decompilation-pipeline.md#ssa-transformation-phase",
+        }
+        md = (
+            "See [Decompilation Pipeline](). For code generation, see [Code Generation](). "
+            "Also see [5.1 Gradle Wrapper System](), [Distribution and Packaging](), and [SSA Transform]()."
+        )
+        res = convert_markdown_links_to_github(md, "skylot", "jadx", chapter_map=chapter_map)
+        self.assertIn("[Decompilation Pipeline](chapters/06_2.2-decompilation-pipeline.md)", res)
+        self.assertIn("[Code Generation](chapters/10_2.6-code-generation.md)", res)
+        self.assertIn("[5.1 Gradle Wrapper System](chapters/25_5.1-gradle-wrapper-system.md)", res)
+        self.assertIn("[Distribution and Packaging](chapters/27_5.3-distribution-and-packaging.md)", res)
+        self.assertIn("[SSA Transform](chapters/06_2.2-decompilation-pipeline.md#ssa-transformation-phase)", res)
+
+    def test_unwrap_backtick_wrapped_links(self):
+        md = "See `[jadx-core/src/main/java/jadx/api/JadxDecompiler.java:59-85](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/api/JadxDecompiler.java#L59-L85)` and `[README.md:14-26]()`."
+        res = convert_markdown_links_to_github(md, "skylot", "jadx")
+        self.assertNotIn("`[", res)
+        self.assertNotIn("]`", res)
+        self.assertIn("[jadx-core/src/main/java/jadx/api/JadxDecompiler.java:59-85](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/api/JadxDecompiler.java#L59-L85)", res)
+        self.assertIn("[README.md:14-26](https://github.com/skylot/jadx/blob/HEAD/README.md#L14-L26)", res)
+
 
 if __name__ == "__main__":
     unittest.main()

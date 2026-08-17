@@ -665,6 +665,16 @@ def sanitize_all_mermaids_in_markdown(md_text: str) -> str:
     return re.sub(r'```mermaid([\s\S]*?)```', _repl, md_text)
 
 
+COMMON_ROOT_FILES = {
+    'gradlew', 'mvnw', 'makefile', 'gnumakefile', 'dockerfile', 'containerfile',
+    'license', 'licence', 'copying', 'notice', 'authors', 'owners', 'readme',
+    'install', 'todo', 'changelog', 'contributing', 'gemfile', 'rakefile',
+    'procfile', 'vagrantfile', 'brewfile', 'build', 'workspace', 'justfile',
+    'taskfile', 'earthfile', 'tiltfile', 'podfile', 'cartfile', 'fastfile',
+    'jenkinsfile', 'cabal', 'rebar.config', 'cmakelists.txt',
+}
+
+
 def is_repo_path(path: str) -> bool:
     """Checks if a string looks like a valid repository relative file path."""
     path = path.strip()
@@ -677,6 +687,8 @@ def is_repo_path(path: str) -> bool:
         return False
     base = os.path.basename(path.replace('\\', '/'))
     if '.' in base or '/' in path or '\\' in path or path.startswith('.'):
+        return True
+    if base.lower() in COMMON_ROOT_FILES:
         return True
     return False
 
@@ -698,7 +710,13 @@ def make_github_file_url(owner: str, repo: str, file_path: str, lines: Optional[
     return base
 
 
-def convert_markdown_links_to_github(text: str, owner: str, repo: str, branch: str = "HEAD") -> str:
+def convert_markdown_links_to_github(
+    text: str,
+    owner: str,
+    repo: str,
+    branch: str = "HEAD",
+    chapter_map: Optional[Dict[str, str]] = None,
+) -> str:
     """
     Transforms source file references, relative file paths, and in-text line citations
     in Markdown into clickable, direct GitHub URLs.
@@ -709,6 +727,9 @@ def convert_markdown_links_to_github(text: str, owner: str, repo: str, branch: s
       - In-page anchors (e.g. #1.1)
       - External web URLs
     """
+    # 0. Unwrap backtick-wrapped markdown links so they render as clickable <a> tags in Markdown Preview
+    text = re.sub(r'`(\[[^\]\n]+\]\([^)\n]*\))`', r'\1', text)
+
     # 1. Protect Mermaid diagram blocks from link modifications
     mermaid_blocks = []
     def _save_mermaid(m):
@@ -729,47 +750,106 @@ def convert_markdown_links_to_github(text: str, owner: str, repo: str, branch: s
 
     text = re.sub(r'(`([^`\n]+)`)(\s*)\[(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)\]\(\)', _repl_backtick_line, text)
 
-    # 3. Convert markdown links: [label](url)
-    def _repl_link(m):
-        label = m.group(1)
-        url = m.group(2).strip()
+    # 3. Contextual line-by-line link conversion
+    current_file = None
+    lines_out = []
 
-        # If URL is already absolute web link or anchor or chapter link, preserve it
-        if url.startswith(('http://', 'https://', '#', 'mailto:', 'ftp:', 'chapters/', './chapters/')) or url.endswith('00_INDEX.md'):
-            return m.group(0)
+    for line in text.split('\n'):
+        # Scan line for existing GitHub blob URLs or repository source paths to update active file context
+        gh_matches = re.findall(rf'github\.com/{re.escape(owner)}/{re.escape(repo)}/blob/[^/]+/([^#\)\s\>\"]+)', line)
+        if gh_matches:
+            current_file = gh_matches[-1].split('#')[0]
 
-        # Empty URL: [src/vs/code/app.ts:58-80]() or [package.json]()
-        if not url:
+        def _repl_link(m):
+            nonlocal current_file
+            label = m.group(1)
+            url = m.group(2).strip()
+
+            # Preserve absolute web links, anchors, and existing chapter markdown links
+            if url.startswith(('http://', 'https://', '#', 'mailto:', 'ftp:', 'chapters/', './chapters/')) or url.endswith('00_INDEX.md') or url.endswith('.md'):
+                if f'github.com/{owner}/{repo}/blob/' in url:
+                    m_path = re.search(rf'github\.com/{re.escape(owner)}/{re.escape(repo)}/blob/[^/]+/([^#\)\s\>\"]+)', url)
+                    if m_path:
+                        current_file = m_path.group(1).split('#')[0]
+                return m.group(0)
+
             clean_label = label.strip()
-            # Match path:start-end or path:start or path:start-end, start-end
-            colon_match = re.match(r'^([a-zA-Z0-9_.\-\/\\]+):(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)$', clean_label)
-            if colon_match:
-                fpath = colon_match.group(1)
-                lines = colon_match.group(2)
-                if is_repo_path(fpath):
-                    gh_url = make_github_file_url(owner, repo, fpath, lines, branch)
+
+            # Empty URL: [src/vs/code/app.ts:58-80]() or [line 77-79]() or [package.json]() or [Chapter Name]()
+            if not url:
+                # Direct file:line citation (e.g. [src/vs/code/app.ts:58-80](), [gradlew:1-249]())
+                colon_match = re.match(r'^([a-zA-Z0-9_.\-\/\\]+):(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)$', clean_label)
+                if colon_match:
+                    fpath = colon_match.group(1)
+                    lines_str = colon_match.group(2)
+                    if is_repo_path(fpath):
+                        current_file = fpath
+                        gh_url = make_github_file_url(owner, repo, fpath, lines_str, branch)
+                        return f'[{label}]({gh_url})'
+
+                # Contextual line citation (e.g. [line 77-79](), [lines 81-85](), [line 25, 29]())
+                line_match = re.match(r'^(?:line|lines)\s+(\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*)$', clean_label, re.IGNORECASE)
+                if line_match and current_file:
+                    lines_str = line_match.group(1)
+                    gh_url = make_github_file_url(owner, repo, current_file, lines_str, branch)
                     return f'[{label}]({gh_url})'
-            elif is_repo_path(clean_label):
-                gh_url = make_github_file_url(owner, repo, clean_label, branch=branch)
+
+                # Bare file link (e.g. [package.json](), [gradlew]())
+                if is_repo_path(clean_label):
+                    current_file = clean_label
+                    gh_url = make_github_file_url(owner, repo, clean_label, branch=branch)
+                    return f'[{label}]({gh_url})'
+
+                # Inter-chapter reference resolution via chapter_map
+                if chapter_map:
+                    def _resolve_chapter(lbl: str) -> Optional[str]:
+                        clean = lbl.strip().lower()
+                        if clean in chapter_map:
+                            return chapter_map[clean]
+                        clean_nonum = re.sub(r'^[0-9.]+\s*', '', clean).strip()
+                        if clean_nonum in chapter_map:
+                            return chapter_map[clean_nonum]
+                        var1 = re.sub(r'\btransform\b', 'transformation', clean)
+                        if var1 in chapter_map:
+                            return chapter_map[var1]
+                        var2 = re.sub(r'\btransformation\b', 'transform', clean)
+                        if var2 in chapter_map:
+                            return chapter_map[var2]
+                        for k, v in chapter_map.items():
+                            if k.startswith(clean) or clean.startswith(k) or k.startswith(clean_nonum) or clean_nonum.startswith(k):
+                                return v
+                        return None
+
+                    target = _resolve_chapter(clean_label)
+                    if target:
+                        return f'[{label}]({target})'
+
+                return m.group(0)
+
+            # Non-empty relative URL: [label](extensions/auth/auth.css) or [label](gradlew) or [label](path#L10-L20)
+            lines_str = None
+            fpath = url
+            if '#' in fpath:
+                fpath, fragment = fpath.split('#', 1)
+                lines_str = fragment
+            elif ':' in fpath and not fpath.startswith('http'):
+                fpath, lines_str = fpath.rsplit(':', 1)
+
+            if is_repo_path(fpath):
+                current_file = fpath
+                gh_url = make_github_file_url(owner, repo, fpath, lines_str, branch)
                 return f'[{label}]({gh_url})'
+
+            if chapter_map and url in chapter_map:
+                return f'[{label}]({chapter_map[url]})'
+
             return m.group(0)
 
-        # Non-empty relative URL: [label](extensions/auth/auth.css) or [label](path#L10-L20) or [label](path:10-20)
-        lines = None
-        fpath = url
-        if '#' in fpath:
-            fpath, fragment = fpath.split('#', 1)
-            lines = fragment
-        elif ':' in fpath and not fpath.startswith('http'):
-            fpath, lines = fpath.rsplit(':', 1)
+        converted_line = re.sub(r'\[([^\]\n]+)\]\(([^)\n]*)\)', _repl_link, line)
+        lines_out.append(converted_line)
 
-        if is_repo_path(fpath):
-            gh_url = make_github_file_url(owner, repo, fpath, lines, branch)
-            return f'[{label}]({gh_url})'
-
-        return m.group(0)
-
-    text = re.sub(r'\[([^\]\n]+)\]\(([^)\n]*)\)', _repl_link, text)
+    text = '\n'.join(lines_out)
+    text = re.sub(r'`(\[[^\]\n]+\]\([^)\n]*\))`', r'\1', text)
 
     # 4. Restore Mermaid blocks
     for idx, block in enumerate(mermaid_blocks):
@@ -1183,6 +1263,47 @@ class DeepWikiCrawler:
             final_pages.sort(key=lambda p: p.meta.index)
             return final_pages
 
+    def _build_chapter_map(self, pages: List[CrawledPage]) -> Dict[str, str]:
+        """Constructs an extensive lookup map for resolving inter-chapter cross references."""
+        cmap = {}
+        for p in pages:
+            idx_str = f"{p.meta.index:02d}"
+            clean_slug = re.sub(r"[^\w\-.]", "_", p.meta.slug)
+            filename = f"{idx_str}_{clean_slug}.md"
+            rel_path = f"chapters/{filename}"
+
+            title = p.meta.title
+            cmap[title] = rel_path
+            cmap[title.lower()] = rel_path
+            if p.meta.chapter_num:
+                cmap[p.meta.chapter_num.lower()] = rel_path
+                cmap[f"{p.meta.chapter_num} {title}".lower()] = rel_path
+            t_nonum = re.sub(r'^[0-9.]+\s*', '', title).strip()
+            cmap[t_nonum] = rel_path
+            cmap[t_nonum.lower()] = rel_path
+
+            # Index headings from markdown
+            for h in re.finditer(r'^#{1,4}\s+(.+)$', p.markdown, re.MULTILINE):
+                heading = h.group(1).strip()
+                anchor = re.sub(r'[^\w\- ]', '', heading).lower().replace(' ', '-')
+                target = f"{rel_path}#{anchor}"
+                cmap[heading] = target
+                cmap[heading.lower()] = target
+                h_nonum = re.sub(r'^[0-9.]+\s*', '', heading).strip()
+                cmap[h_nonum] = target
+                cmap[h_nonum.lower()] = target
+                if '(' in h_nonum:
+                    h_paren = h_nonum.split('(')[0].strip()
+                    cmap[h_paren] = target
+                    cmap[h_paren.lower()] = target
+                for suffix in [' phase', ' sequence', ' structure', ' system', ' subsystem', ' framework', ' architecture']:
+                    if h_nonum.lower().endswith(suffix):
+                        stem = h_nonum[: -len(suffix)].strip()
+                        if stem:
+                            cmap[stem] = target
+                            cmap[stem.lower()] = target
+        return cmap
+
     def save(
         self,
         crawled_pages: List[CrawledPage],
@@ -1199,6 +1320,31 @@ class DeepWikiCrawler:
         target_dir = os.path.join(self.output_dir, repo_dir_name)
         os.makedirs(target_dir, exist_ok=True)
 
+        chapter_map = self._build_chapter_map(crawled_pages)
+
+        # Resolve inter-chapter links and contextual line citations across all pages
+        resolved_pages: List[CrawledPage] = []
+        for p in crawled_pages:
+            resolved_md = convert_markdown_links_to_github(
+                p.markdown,
+                self.owner,
+                self.repo,
+                self.branch,
+                chapter_map=chapter_map,
+            )
+            resolved_pages.append(
+                CrawledPage(
+                    meta=p.meta,
+                    markdown=resolved_md,
+                    success=p.success,
+                    status_code=p.status_code,
+                    error=p.error,
+                    char_count=len(resolved_md),
+                    word_count=len(resolved_md.split()) if resolved_md else 0,
+                    mermaid_count=p.mermaid_count,
+                )
+            )
+
         saved_files = []
 
         # 1. Save Split Markdown files
@@ -1211,13 +1357,13 @@ class DeepWikiCrawler:
                 f"# {self.owner}/{self.repo} Documentation",
                 f"",
                 f"> Automatically crawled from DeepWiki: [{self.base_url}]({self.base_url})",
-                f"> Total Chapters: {len(crawled_pages)}",
+                f"> Total Chapters: {len(resolved_pages)}",
                 f"",
                 f"## Table of Contents",
                 f"",
             ]
 
-            for page in crawled_pages:
+            for page in resolved_pages:
                 idx_str = f"{page.meta.index:02d}"
                 clean_slug = re.sub(r"[^\w\-.]", "_", page.meta.slug)
                 filename = f"{idx_str}_{clean_slug}.md"
@@ -1255,7 +1401,7 @@ class DeepWikiCrawler:
                 f"",
                 f"> **Repository:** https://github.com/{self.owner}/{self.repo}",
                 f"> **Source:** [{self.base_url}]({self.base_url})",
-                f"> **Total Chapters:** {len(crawled_pages)}",
+                f"> **Total Chapters:** {len(resolved_pages)}",
                 f"",
                 "---",
                 "",
@@ -1263,13 +1409,13 @@ class DeepWikiCrawler:
                 "",
             ]
 
-            for page in crawled_pages:
+            for page in resolved_pages:
                 anchor = re.sub(r"[^\w\- ]", "", page.meta.title).lower().replace(" ", "-")
                 combined_lines.append(f"- [{page.meta.title}](#{anchor})")
 
             combined_lines.append("\n---\n")
 
-            for page in crawled_pages:
+            for page in resolved_pages:
                 combined_lines.append(f"<!-- Chapter {page.meta.index}: {page.meta.title} -->")
                 combined_lines.append(f"<!-- Source: {page.meta.url} -->\n")
                 combined_lines.append(page.markdown)
@@ -1286,8 +1432,8 @@ class DeepWikiCrawler:
                 "repository": f"{self.owner}/{self.repo}",
                 "github_url": f"https://github.com/{self.owner}/{self.repo}",
                 "deepwiki_url": self.base_url,
-                "total_pages": len(crawled_pages),
-                "total_mermaid_diagrams": sum(p.mermaid_count for p in crawled_pages),
+                "total_pages": len(resolved_pages),
+                "total_mermaid_diagrams": sum(p.mermaid_count for p in resolved_pages),
                 "pages": [
                     {
                         "index": p.meta.index,
@@ -1300,7 +1446,7 @@ class DeepWikiCrawler:
                         "mermaid_count": p.mermaid_count,
                         "markdown": p.markdown,
                     }
-                    for p in crawled_pages
+                    for p in resolved_pages
                 ],
             }
             with open(json_path, "w", encoding="utf-8") as f:
@@ -1310,8 +1456,8 @@ class DeepWikiCrawler:
         return {
             "target_dir": target_dir,
             "saved_files": saved_files,
-            "total_pages": len(crawled_pages),
-            "total_mermaids": sum(p.mermaid_count for p in crawled_pages),
+            "total_pages": len(resolved_pages),
+            "total_mermaids": sum(p.mermaid_count for p in resolved_pages),
         }
 
 
