@@ -146,26 +146,6 @@ class TestGitHubLinkConverter(unittest.TestCase):
         self.assertIn("[line 25, 29](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/dex/info/MethodInfo.java#L25)", res)
         self.assertIn("[line 156-158](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/core/dex/info/MethodInfo.java#L156-L158)", res)
 
-    def test_inter_chapter_resolution(self):
-        chapter_map = {
-            "decompilation pipeline": "chapters/06_2.2-decompilation-pipeline.md",
-            "2.2 decompilation pipeline": "chapters/06_2.2-decompilation-pipeline.md",
-            "code generation": "chapters/10_2.6-code-generation.md",
-            "5.1 gradle wrapper system": "chapters/25_5.1-gradle-wrapper-system.md",
-            "distribution and packaging": "chapters/27_5.3-distribution-and-packaging.md",
-            "ssa transformation phase": "chapters/06_2.2-decompilation-pipeline.md#ssa-transformation-phase",
-        }
-        md = (
-            "See [Decompilation Pipeline](). For code generation, see [Code Generation](). "
-            "Also see [5.1 Gradle Wrapper System](), [Distribution and Packaging](), and [SSA Transform]()."
-        )
-        res = convert_markdown_links_to_github(md, "skylot", "jadx", chapter_map=chapter_map)
-        self.assertIn("[Decompilation Pipeline](chapters/06_2.2-decompilation-pipeline.md)", res)
-        self.assertIn("[Code Generation](chapters/10_2.6-code-generation.md)", res)
-        self.assertIn("[5.1 Gradle Wrapper System](chapters/25_5.1-gradle-wrapper-system.md)", res)
-        self.assertIn("[Distribution and Packaging](chapters/27_5.3-distribution-and-packaging.md)", res)
-        self.assertIn("[SSA Transform](chapters/06_2.2-decompilation-pipeline.md#ssa-transformation-phase)", res)
-
     def test_unwrap_backtick_wrapped_links(self):
         md = "See `[jadx-core/src/main/java/jadx/api/JadxDecompiler.java:59-85](https://github.com/skylot/jadx/blob/HEAD/jadx-core/src/main/java/jadx/api/JadxDecompiler.java#L59-L85)` and `[README.md:14-26]()`."
         res = convert_markdown_links_to_github(md, "skylot", "jadx")
